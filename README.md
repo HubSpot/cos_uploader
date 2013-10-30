@@ -116,10 +116,10 @@ The title of the blog post
 =========================
 
 
-&lt;!--[hubspot-metadata]
+<!--[hubspot-metadata]
 { 
 "slug": "an-api-managed-blog-post"
 }
-[end-hubspot-metadata]--&gt;
+[end-hubspot-metadata]-->
 
 ```
