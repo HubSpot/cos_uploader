@@ -35,14 +35,15 @@ Then cd to the folder with your files and run:
 Basic Usage
 --------------------------
 The expected folder structure is:
-files/
-templates/
+
+* files/
+* templates/
 
 **files** contain static assets such images, javascript, css, etc.
+
 **templates** contain files with HubSpot Markup Language.  "templates" contain tokens and tags that indicate editable areas for the end customer to edit via the UI.  Templates also contain dynamic logic.
 
-When you run the sync, any relative links in a template file to a 
-
+When you run the sync, any relative links in a template file to a static file will be converted to the proper URL in our cloud content delivery network.
 
 
 
