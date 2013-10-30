@@ -22,14 +22,26 @@ chmod 700 /usr/local/bin/sync_to_cos
 ```
 
 Now you should be able to go to the folder with your files in it from the command line and type:
-``>sync_to_cos```
+```>sync_to_cos```
 
 And you should get all the options
+
+To update your portal, go to https://app.hubspot.com/keys/get and get an API key for your portal.
+
+Then cd to the folder with your files and run
+```>sync_to_cos --hub-id=(your hubid or portalid) --api-key=(your api key) -a sync```
 
 
 Basic Usage
 --------------------------
+The expected folder structure is:
+files/
+templates/
 
+**files** contain static assets such images, javascript, css, etc.
+**templates** contain files with HubSpot Markup Language.  "templates" contain tokens and tags that indicate editable areas for the end customer to edit via the UI.  Templates also contain dynamic logic.
+
+When you run the sync, any relative links in a template file to a 
 
 
 
