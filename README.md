@@ -22,7 +22,9 @@ chmod 700 /usr/local/bin/sync_to_cos
 ```
 
 Now you should be able to go to the folder with your files in it from the command line and type:
-```>sync_to_cos``` 
+```
+>sync_to_cos
+``` 
 
 And you should get all the options
 
