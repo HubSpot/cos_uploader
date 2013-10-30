@@ -173,6 +173,8 @@ class BaseUploader(Propertized):
             print 'POST URL IS ', url
             r = requests.post(url, data=json.dumps(data))
             print 'RESULT ', r
+            if r.status_code > 299:
+                print r.content
             return r.json()['id']
         else:
             url = self.get_put_url(object_id)
@@ -308,6 +310,10 @@ class PageUploader(BaseUploader):
             data['html_title'] = os.path.split(data['slug'])[1].replace('-', ' ').replace('_', ' ').title()
         if 'name' not in data:
             data['name'] = data['slug'].replace('-', ' ').replace('_', ' ').replace('/', ' > ').title()
+            if not data['name']:
+                data['name'] = 'Home'
+        if 'deleted_at' not in data:
+            data['deleted_at'] = 0
         data['widget_containers'] = {}
         data['widgets'] = {}
         dom = pq('<div id="pyquery">' + self.file_details.content + '</div>')
