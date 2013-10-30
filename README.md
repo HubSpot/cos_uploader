@@ -7,12 +7,17 @@ The cos_syncer requires python 2.7.x.  Python is installed by default on Max OSX
 
 Assuming you have git, python2.7, virtualenvwrapper, and pip installed:
 ```
+# Clone the git repo to get the code
 git clone git@github.com:HubSpot/cos_syncer.git
-mkvirtualenv cos_syncer
+# Go into the main code directory
 cd cos_syncer
+# Create a python virtualenv in order to hold dependencies
+mkvirtualenv cos_syncer
+# install dependencies
 pip install -r requirements.pip
-mydir = $(pwd);
+# create a wrapper script that will run from the command line anywhere
 echo "source $WORKON_HOME/cos_syncer/bin/activate;python "$(pwd)'/cos_syncer/sync_to_cos.py $*' > "/usr/local/bin/sync_to_cos"
+# give the wrapper script execute privileges
 chmod 700 /usr/local/bin/sync_to_cos
 ```
 
