@@ -5,13 +5,19 @@ Installing
 ---------------------------------
 The cos_syncer requires python 2.7.x.  Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
 
-
-git clone 
+Assuming you have git, python2.7, virtualenvwrapper, and pip installed:
+```
+git clone git@github.com:HubSpot/cos_syncer.git
+mkvirtualenv cos_syncer
 cd cos_syncer
-python setup.py install
+pip install -r requirements.pip
+mydir = $(pwd);
+echo "workon cos_syncer;python "$(pwd)"/cos_syncer/sync_to_cos.py" > "/usr/local/bin/sync_to_cos"
+chmod 700 /usr/local/bin/sync_to_cos
+```
 
-Now you should be able to go to any folder from the command line and type:
->sync_to_cos.py
+Now you should be able to go to the folder with your files in it from the command line and type:
+``>sync_to_cos```
 
 And you should get all the options
 
