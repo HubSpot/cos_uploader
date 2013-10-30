@@ -1,0 +1,6 @@
+PyYAML==3.10
+cssselect==0.9.1
+lxml==3.2.3
+pyquery==1.2.6
+requests==2.0.0
+wsgiref==0.1.2
