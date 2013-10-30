@@ -382,7 +382,7 @@ class SiteMapUploader(BaseUploader):
                 build_dicts(child_node)
         build_dicts(tree)
         slugs_in = '&'.join(['slug__in=%s' % slug for slug in all_slugs])
-        url = 'http://localhost:8080/content/api/v2/pages?%s&hapikey=%s&portalId=%s' % (slugs_in, self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/pages?%s&hapikey=%s&portalId=%s' % (slugs_in, self.options.api_key, self.options.hub_id)
         r = requests.get(url)
         for page in r.json().get('objects', []):
             slug_to_node[page['slug']]['page_id'] = page['id']
