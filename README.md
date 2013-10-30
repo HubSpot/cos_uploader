@@ -73,9 +73,9 @@ Add metadata to any .html, .js, or .css file, by putting JSON inside a comment. 
 }
 &lt;!--[end-hubspot-metadata]--&gt;
 
-/*[hubspot-metadata]*/
+/\*[hubspot-metadata]\*/
 
-/*[end-hubspot-metadata]*/
+/\*[end-hubspot-metadata]\*/
 
 
 Don't like the default file structure?
