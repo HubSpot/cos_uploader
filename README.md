@@ -1,5 +1,5 @@
-cos_syncer
-==========
+cos_syncer - ALPHA not ready for real use
+=================================
 
 Installing
 ---------------------------------
