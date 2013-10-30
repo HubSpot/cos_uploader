@@ -12,7 +12,7 @@ mkvirtualenv cos_syncer
 cd cos_syncer
 pip install -r requirements.pip
 mydir = $(pwd);
-echo "workon cos_syncer;python "$(pwd)"/cos_syncer/sync_to_cos.py" > "/usr/local/bin/sync_to_cos"
+echo "workon cos_syncer;python "$(pwd)'/cos_syncer/sync_to_cos.py $*' > "/usr/local/bin/sync_to_cos"
 chmod 700 /usr/local/bin/sync_to_cos
 ```
 
