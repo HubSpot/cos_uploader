@@ -67,11 +67,11 @@ site-maps/
 
 Add metadata to any .html, .js, or .css file, by putting JSON inside a comment.  The JSON is identicaly to the allowed JSON for a PUT or POST request in the relevant REST API.  The comment will be stripped during the upload process.
 
-<!--[hubspot-metadata]-->
+&lt;!--[hubspot-metadata]--&gt;
 {
     "": ""
 }
-<!--[end-hubspot-metadata]-->
+&lt;!--[end-hubspot-metadata]--&gt;
 
 /*[hubspot-metadata]*/
 
