@@ -21,16 +21,14 @@ echo "source $WORKON_HOME/cos_syncer/bin/activate;python "$(pwd)'/cos_syncer/syn
 chmod 700 /usr/local/bin/sync_to_cos
 ```
 
-Now you should be able to go to the folder with your files in it from the command line and type:
+Now you should be able to go to the folder with your files in it from the command line.  Enter the following command, and the help will be printed out:
 ```
 >sync_to_cos
 ``` 
 
-And you should get all the options
+To use the sync script with your portal, go to https://app.hubspot.com/keys/get and get an API key for your portal.
 
-To update your portal, go to https://app.hubspot.com/keys/get and get an API key for your portal.
-
-Then cd to the folder with your files and run
+Then cd to the folder with your files and run:
 ```>sync_to_cos --hub-id=(your hubid or portalid) --api-key=(your api key) -a sync```
 
 
