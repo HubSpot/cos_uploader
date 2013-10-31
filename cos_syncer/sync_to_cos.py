@@ -216,10 +216,13 @@ class Syncer(object):
         return result
             
 
+default_folder = os.getcwd()
+if default_folder == os.environ.get('HOME'):
+    default_folder = os.path.dirname(sys.argv[0])
 
 class Options(ScriptOptions):
     action = Opt(choices=['watch', 'sync'])
-    target_folder = Opt(default=os.getcwd())
+    target_folder = Opt(default=default_folder)
     hub_id = Opt()
     api_key = Opt()
     use_buffer = Opt()
@@ -293,7 +296,7 @@ class BaseUploader(Propertized):
         if not object_id:
             url = self.get_create_url()
             print 'POST URL IS ', url
-            r = requests.post(url, data=json.dumps(data))
+            r = requests.post(url, data=json.dumps(data), verify=False)
             print 'RESULT ', r
             if r.status_code > 299:
                 print r.content
@@ -301,7 +304,7 @@ class BaseUploader(Propertized):
         else:
             url = self.get_put_url(object_id)
             print 'PUT URL IS ', url
-            r = requests.put(url, data=json.dumps(data))
+            r = requests.put(url, data=json.dumps(data), verify=False)
             print 'RESULT ', r
             return object_id
 
@@ -340,7 +343,7 @@ class TemplateUploader(BaseUploader):
 
     def lookup_id(self, data):
         url = 'https://api.hubapi.com/content/api/v2/templates?path=%s&hapikey=%s&portalId=%s' % (data['path'], self.options.api_key, self.options.hub_id)
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         result = r.json()
         if not result.get('objects', []):
             return None
@@ -377,13 +380,13 @@ class FileUploader(BaseUploader):
         if not object_id:
             url = self.get_create_url()
             print 'POST URL IS ', url
-            r = requests.post(url, data=data, files=files)
+            r = requests.post(url, data=data, files=files, verify=False)
             print "RESULT ", r
             return r.json()['objects'][0]['id']
         else:
             url = self.get_put_url(object_id)
             print 'POST URL IS ', url
-            r = requests.post(url, data=data, files=files)
+            r = requests.post(url, data=data, files=files, verify=False)
             print 'RESULT ', r
             return object_id
             
@@ -392,7 +395,7 @@ class FileUploader(BaseUploader):
     def lookup_id(self, data):
         alt_key = 'hub/%s/%s' % (self.options.hub_id, os.path.splitext(self.file_details.relative_path)[0])
         url = 'https://api.hubapi.com/content/api/v2/files?alt_key=%s&hapikey=%s&portalId=%s' % (alt_key, self.options.api_key, self.options.hub_id)
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         result = r.json()
         if not result.get('objects', []):
             return None
@@ -412,7 +415,7 @@ class PageUploader(BaseUploader):
 
     def lookup_id(self, data):
         url = 'https://api.hubapi.com/content/api/v2/pages?slug=%s&hapikey=%s&portalId=%s' % (data['slug'], self.options.api_key, self.options.hub_id)
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         result = r.json()
         if not result.get('objects', []):
             return None
@@ -528,7 +531,7 @@ class SiteMapUploader(BaseUploader):
         name = os.path.splitext(self.file_details.relative_path)[0]
         url = 'https://api.hubapi.com/content/api/v2/site-maps?name=%s&hapikey=%s&portalId=%s' % (name, self.options.api_key, self.options.hub_id)
         r = requests.get(
-            url
+            url, verify=False
             )
         result = r.json()
         if not result.get('objects', []):
@@ -560,7 +563,7 @@ class SiteMapUploader(BaseUploader):
         build_dicts(tree)
         slugs_in = '&'.join(['slug__in=%s' % slug for slug in all_slugs])
         url = 'https://api.hubapi.com/content/api/v2/pages?%s&hapikey=%s&portalId=%s' % (slugs_in, self.options.api_key, self.options.hub_id)
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         for page in r.json().get('objects', []):
             slug_to_node[page['slug']]['page_id'] = page['id']
         
