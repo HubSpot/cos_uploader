@@ -6,8 +6,13 @@ Easy Installation From the Binaries
 
 ### Mac OSX 10.6+
 
-* Open up terminal
+* Open up Terminal
 * Go to the folder with your assets.  Your asset folder should have one folder with "templates" and one folder with "files"
+
+```
+cd /path/to/your/asset/folder
+```
+
 * Run the following command to download the binary and make it executable:
 
 ```
