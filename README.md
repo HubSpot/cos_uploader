@@ -5,7 +5,9 @@ The cos_syncer will watch the contents of a folder on your local hard drive and 
 
 ### Easy Install (Binary Distribution)
 
-**Required** You must first get an API key for your HubSpot site.  These are only available for Professional and Enterprise customers.  Get your API key from here: https://app.hubspot.com/keys/get
+**Required before you start** 
+
+You must first get an API key for your HubSpot site.  These are only available for Professional and Enterprise customers.  Get your API key from here: https://app.hubspot.com/keys/get
 
 #### Mac OSX 10.6+
 
