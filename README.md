@@ -6,16 +6,16 @@ Easy Installation From the Binaries
 
 ### Mac OSX 10.6+
 
-1. Open up terminal
-2. Go to the folder with your assets.  Your asset folder should have one folder with "templates" and one folder with "files"
-3. Run the following command to download the binary and make it executable:
+* Open up terminal
+* Go to the folder with your assets.  Your asset folder should have one folder with "templates" and one folder with "files"
+* Run the following command to download the binary and make it executable:
 
 ```
 wget https://github.com/HubSpot/cos_syncer/releases/download/v0.10-alpha/sync_to_cos_osx -O sync_to_cos; 
 chmod 700 sync_to_cos;
 ```
 
-4. Now you can run the sync watcher:
+* Now you can run the sync watcher:
 
 ```
 ./sync_to_cos
