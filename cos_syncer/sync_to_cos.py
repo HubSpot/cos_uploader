@@ -295,7 +295,7 @@ class BaseUploader(Propertized):
         print self.file_details.full_local_path
         if not object_id:
             url = self.get_create_url()
-            print 'POST URL IS ', url
+            print 'POST URL IS: ', url
             r = requests.post(url, data=json.dumps(data), verify=False)
             print 'RESULT ', r
             if r.status_code > 299:
