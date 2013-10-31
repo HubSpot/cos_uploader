@@ -40,7 +40,7 @@ To get all the options, run with the help flag:
 ```                
 
 
-### Windows
+#### Windows
 
 ...coming soon..
 
