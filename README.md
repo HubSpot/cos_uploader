@@ -9,7 +9,7 @@ Easy Installation From the Binaries
 1. Open up terminal
 2. Go to the folder with your assets.  Your asset folder should have one folder with "templates" and one folder with "files"
 3. Run the following command to download and make executable the sync program:
-```shell
+```
 wget https://github.com/HubSpot/cos_syncer/releases/download/v0.10-alpha/sync_to_cos_osx -O sync_to_cos; chmod 700 sync_to_cos;
 ```
 4. Now you can run the sync watcher:
