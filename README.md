@@ -3,10 +3,9 @@ ALPHA not ready for real use
 
 The cos_syncer will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
 
-Easy Installation From the Binaries
---------------------------------------------
+### Easy Install (Binary Distribution)
 
-### Mac OSX 10.6+
+#### Mac OSX 10.6+
 
 * Open up Terminal
 * Go to the folder with your assets.  Your asset folder should have one folder with "templates" and one folder with "files"
