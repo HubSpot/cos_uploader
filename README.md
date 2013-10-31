@@ -3,11 +3,13 @@ ALPHA not ready for real use
 
 The cos_syncer will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
 
-### Easy Install (Binary Distribution)
-
 **Required before you start** 
 
 You must first get an API key for your HubSpot site.  These are only available for Professional and Enterprise customers.  Get your API key from here: https://app.hubspot.com/keys/get
+
+
+### Easy Install (Binary Distribution)
+
 
 #### Mac OSX 10.6+
 
