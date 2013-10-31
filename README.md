@@ -1,7 +1,11 @@
 cos_syncer - ALPHA not ready for real use
 =================================
 
-Installation and Setup
+Easy Installation From the Binaries
+--------------------------------------------
+
+
+Installing from the Source
 ---------------------------------
 The cos_syncer requires python 2.7.x.  Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
 

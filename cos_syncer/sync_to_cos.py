@@ -1,39 +1,146 @@
 '''
 '''
+import codecs
 import json
 import markdown
 import os
-import pyquery
+from ordereddict import OrderedDict
 import re
 import requests
 import time
 import traceback
 import yaml
+import sys
+import time
+import traceback
 
-from pyquery import PyQuery as pq
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler 
+except:
+    Observer = None
+    LoggingEventHandler = object
 
 from snakecharmer.propertized import Propertized, Prop
 from snakecharmer.script_options import ScriptOptions, Opt
-
+ 
 def main():
     options = Options.from_argv()
+    is_interactive_mode = False
+    if not options.hub_id:
+        is_interactive_mode = True
+        handle_interactive_mode(options)
+    if not os.path.isdir(options.target_folder):
+        print "The target folder (%s) does not exist" % options.target_folder
+        sys.exit(1)
+    if not os.path.isdir(options.target_folder + "/files") and not os.path.isdir(options.target_folder + "/templates. Exiting."):
+        print "You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to sync.  Exiting." % options.target_folder
+        sys.exit(1)
+        
     if options.action == 'sync':
         sync_folder(options)
+    elif options.action == 'watch':
+        watch_folder(options)
     else:
         options.print_help()
+
+    if is_interactive_mode:
+        print "Quitting..."
+        time.sleep(7)
+
+def handle_interactive_mode(options):
+    target_folder = raw_input("What folder do you want to sync? (Leave blank to use current folder \"%s\"): " % options.target_folder)
+    if target_folder.strip():
+        options.target_folder = target_folder.strip()
+    if not os.path.isdir(options.target_folder):
+        fatal("The target folder (%s) does not exist." % options.target_folder)
+
+    config_path = options.target_folder + "/.cos-sync-config.yaml"
+    config = {}
+    if os.path.isfile(config_path):
+        f = open(config_path, 'r')
+        config = yaml.load(f) or {}
+        f.close()
+        options.hub_id = config.get('hub_id')
+        options.api_key = config.get('api_key')
+    id_msg = ''
+    if options.hub_id:
+        id_msg = " (leave blank for default of %s)" % options.hub_id
+    options.hub_id = raw_input("Enter your portal_id/hubid%s: " % id_msg).strip() or options.hub_id
+    if not str(options.hub_id).isdigit():
+        fatal("That is not a valid hubid")
+    key_msg = "Get a key at https://app.hubspot.com/keys/get"
+    if options.api_key:
+        key_msg = 'Leave blank for default of "%s"' % options.api_key
+    options.api_key = raw_input("Enter your API key (%s): " % key_msg).strip() or options.api_key
+    if not options.api_key:
+        fatal("That is not a valid API key")
+    options.action = "watch"
+
+    if options.hub_id != config.get('hub_id') or options.api_key != config.get('api_key'):
+        remember = raw_input("Remember the hubid and api_key for next time? (Y/yes or no)?: " )
+        if remember.lower() in ('y', 'yes'):
+            config['hub_id'] = options.hub_id
+            config['api_key'] = options.api_key
+            f = open(config_path, 'w')
+            yaml.dump(config, f)
+            f.close()
+
+    print "Syncing then watching folder " + options.target_folder
+
+def fatal(msg):
+    print msg
+    print "Exiting..."
+    time.sleep(7)     
+    sys.exit(1)                 
 
 def sync_folder(options):
     file_details = crawl_directory_and_load_file_details(options.target_folder)
     syncer = Syncer(options)
     for file_details in file_details:
         syncer.sync_if_changed(file_details)
-    
+ 
+def watch_folder(options):
+    sync_folder(options)
+    event_handler = FileSyncEventHandler(options)
+    observer = Observer()
+    observer.schedule(event_handler, path=options.target_folder, recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()   
+
+cos_types = ['files', 'templates', 'scripts', 'styles', 'pages', 'site-maps', 'blog-posts']
+
+class FileSyncEventHandler(FileSystemEventHandler):
+    def __init__(self, options):
+        self.syncer = Syncer(options)
+        self.options = options
+
+    def on_modified(self, event):
+        try:
+            self.do_on_modified(event)
+        except:
+            traceback.print_exc()
+
+    def do_on_modified(self, event):
+        if event.is_directory:
+            return
+        if '/.sync-history.json' in event.src_path:
+            return
+        print 'EVENT ', event, event.key 
+        self.syncer.handle_file_changed(event.src_path)
 
 def crawl_directory_and_load_file_details(folder):
     all_file_details = []
-    for cos_type in ['files', 'templates', 'scripts', 'styles', 'pages', 'site-maps', 'blog-posts']:
+    for cos_type in cos_types:
         type_folder = folder + '/' + cos_type
         for dir_path, dir_names, file_names in os.walk(type_folder):
+            if dir_path.startswith('.'):
+                continue
             for file_name in file_names:
                 if file_name.endswith('~') or '.#' in file_name or file_name.endswith('#') or file_name.startswith('.'):
                     continue
@@ -51,19 +158,29 @@ class Syncer(object):
         self.sync_history = self._read_sync_history()
         # Rate limit to average of 20 updates per minute
 
-    def handle_file_changed(self):
-        pass
-        # load file details
-        # sync file details
+    def handle_file_changed(self, full_path):
+        relative_path = full_path.replace(self.options.target_folder, '').strip('/')
+        print 'RELATIVE PATH ', relative_path
+        cos_type = relative_path.split('/')[0]
+        if cos_type not in cos_types:
+            return
+        relative_path = '/'.join(relative_path.split('/')[1:])
+        if relative_path.startswith('.'):
+            return
+        details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
+        self.sync_file_details(details)
 
     def _get_last_synced_at(self, file_details):
         return self.sync_history.get(file_details.cos_type + '/' + file_details.relative_path, {}).get('last_sync_at', 0)
+
+    def _get_last_size(self, file_details):
+        return self.sync_history.get(file_details.cos_type + '/' + file_details.relative_path, {}).get('last_size', 0)
     
     def _get_object_id(self, file_details):
-        return self.sync_history.get(file_details.cos_type + '/' + file_details.relative_path, {}).get('object_id', None)
+        return self.sync_history.get(file_details.cos_type + '/' + file_details.relative_path, {}).get('object_id', None) 
 
     def sync_if_changed(self, file_details):
-        if file_details.last_modified_at > self._get_last_synced_at(file_details):
+        if file_details.last_modified_at > self._get_last_synced_at(file_details) and file_details.size != self._get_last_size(file_details):
             self.sync_file_details(file_details)
 
     def sync_file_details(self, file_details):
@@ -74,22 +191,23 @@ class Syncer(object):
             object_id=self._get_object_id(file_details),
             )
         object_id = uploader.upload()
-        self._update_sync_history(file_details.cos_type + '/' + file_details.relative_path, object_id)
+        self._update_sync_history(file_details.cos_type + '/' + file_details.relative_path, object_id, file_details.size)
         self._save_sync_history()
 
-    def _update_sync_history(self, path, object_id):
-        self.sync_history[path] = {'id': object_id, 'last_sync_at': int(time.time() * 1000)}
+    def _update_sync_history(self, path, object_id, size):
+        self.sync_history[path] = {'id': object_id, 'last_sync_at': int(time.time() * 1000), 'last_size': size}
         
 
     def _save_sync_history(self):
         f = open(self.options.target_folder + '/.sync-history.json', 'w')
-        json.dump(self.sync_history, f)
+        history = OrderedDict(sorted(self.sync_history.items(), key=lambda t: t[0]))
+        json.dump(history, f, indent=4)
         f.close()
         
     def _read_sync_history(self):
         if not os.path.isfile(self.options.target_folder + '/.sync-history.json'):
             return {}
-        f = open('.sync-history.json', 'r')
+        f = open(self.options.target_folder + '/.sync-history.json', 'r')
         try:
             result = json.load(f)
         except:
@@ -100,7 +218,7 @@ class Syncer(object):
 
 
 class Options(ScriptOptions):
-    action = Opt(choices=['watch', 'sync', 'publish'])
+    action = Opt(choices=['watch', 'sync'])
     target_folder = Opt(default=os.getcwd())
     hub_id = Opt()
     api_key = Opt()
@@ -115,28 +233,31 @@ class FileDetails(Propertized):
     cos_type = Prop('')
     is_text_file = Prop(False)
     extension = Prop('')
+    size = Prop(0)
 
     text_file_extensions = ['.css', '.txt', '.md', '.html', '.js', '.json', '.yaml']
 
     @classmethod
     def load_from_file_path(cls, file_path, relative_path, cos_type):
+        stat = os.stat(file_path)
         details = cls(
             relative_path=relative_path, 
             full_local_path=file_path,
             cos_type=cos_type,
             extension=os.path.splitext(file_path)[1],
             is_text_file=os.path.splitext(file_path)[1] in cls.text_file_extensions,
-            last_modified_at=int(os.stat(file_path).st_mtime * 1000)
+            last_modified_at=int(stat.st_mtime * 1000),
+            size=stat.st_size
         )
         details._hydrate_content_and_metadata()
         return details
 
-    _html_comment_re = re.compile(r"<!--\[hubspot-metadata\]-->([\w\W]*?)<!--\[end-hubspot-metadata\]-->")
-    _js_comment_re = re.compile(r"/\*\[hubspot-metadata\]([\w\W]*?)\[end-hubspot-metadata\]\*/")
+    _html_comment_re = re.compile(r"\[hubspot-metadata\]-->([\w\W]*?)<!--\[end-hubspot-metadata\]")
+    _js_comment_re = re.compile(r"\[hubspot-metadata\]([\w\W]*?)\[end-hubspot-metadata\]")
     def _hydrate_content_and_metadata(self):
         if not self.is_text_file:
             return
-        f = open(self.full_local_path, 'r')
+        f = codecs.open(self.full_local_path, 'r', 'utf-8')
         self.content = f.read()
         f.close()
 
@@ -150,9 +271,9 @@ class FileDetails(Propertized):
         m = self._js_comment_re.search(self.content)
         if m:
             try:
-                self.metadata = json.loads(m.group(1))
+                meta_json = '\n'.join(m.group(0).split('\n')[1:-1])
+                self.metadata = json.loads(meta_json)
             except:
-                print 'Error parsing the meta data for ' + self.full_local_path
                 traceback.print_exc()
         self.content = self._html_comment_re.sub('', self.content)
         self.content = self._js_comment_re.sub('', self.content)
@@ -303,6 +424,7 @@ class PageUploader(BaseUploader):
     def hydrate_json_data(self, data):
         if 'slug' not in data:
             data['slug'] = os.path.splitext(self.file_details.relative_path)[0]
+            data['slug'] = data['slug'].lower().replace(' ', '-').replace('_', '-').replace('--', '-')
             if data['slug'].endswith('/index'):
                 data['slug'] = data['slug'][:-6]
             if data['slug'] == 'index':
@@ -320,7 +442,7 @@ class PageUploader(BaseUploader):
         if self.file_details.content.find('[start-widget') < 100:
             self._hydrate_widgets_via_brackets(data)
         else:
-            self._hydrate_widgets_via_pyquery(data)
+            self._hydrate_widgets_via_pyquery(data) 
 
 
     def _hydrate_widgets_via_pyquery(self, data):
@@ -366,17 +488,13 @@ class PageUploader(BaseUploader):
                     data['widgets'][attr_data['name']] = widget
             elif line.strip().startswith('[start-attribute'):
                 attribute_lines = []
-                print 'ATTRDATA ', attr_data
                 is_markdown = attr_data.get('is_markdown', '').lower() == 'true'
-                print 'START ATTR ', is_markdown
                 current_attribute_name = attr_data['name']
             elif line.strip().startswith('[end-attribute]'):
                 attr_html = '\n'.join(attribute_lines)
-                print 'LINES ', len(attribute_lines)
                 if is_markdown:
-                    attr_html = markdown.markdown(attr_html, ['fenced_code']) 
+                    attr_html = markdown.markdown(attr_html, ['fenced_code', 'toc']) 
                     attr_html = attr_html.replace('&amp;lbrace;', '&#123;')
-                    print 'PARSE MARKDOWN FENCED', is_markdown
                 widget['body'][current_attribute_name] = attr_html
                 attribute_lines = None
                 current_attribute_name = None
