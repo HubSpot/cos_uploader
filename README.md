@@ -1,5 +1,7 @@
-cos_syncer - ALPHA not ready for real use
+ALPHA not ready for real use
 =================================
+
+The cos_syncer will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
 
 Easy Installation From the Binaries
 --------------------------------------------
