@@ -1,6 +1,7 @@
 '''
 '''
 import json
+import markdown
 import os
 import pyquery
 import re
@@ -316,6 +317,13 @@ class PageUploader(BaseUploader):
             data['deleted_at'] = 0
         data['widget_containers'] = {}
         data['widgets'] = {}
+        if self.file_details.content.find('[start-widget') < 100:
+            self._hydrate_widgets_via_brackets(data)
+        else:
+            self._hydrate_widgets_via_pyquery(data)
+
+
+    def _hydrate_widgets_via_pyquery(self, data):
         dom = pq('<div id="pyquery">' + self.file_details.content + '</div>')
         for div in dom("#pyquery > div"):
             if div.attrib.get('container_name'):
@@ -335,7 +343,52 @@ class PageUploader(BaseUploader):
                     html = pq(attr_div).html()
                     html = self._clean_html(html)
                     widget['body'][attr_div.get('attribute_name')] = html
-        pass
+        
+    _attr_re = re.compile(r'(\w+)=\"([^"]*)\"')
+    def _hydrate_widgets_via_brackets(self, data):
+        html = self.file_details.content
+        attribute_lines = None
+        current_attribute_name = None
+        is_markdown = None
+        container = None
+        widget = None
+        for line in html.split('\n'):
+            attr_data = dict(self._attr_re.findall(line))
+            if line.strip().startswith('[start-container'):
+                container = {'widgets': []}
+                data['widget_containers'][attr_data['name']] = container
+            elif line.strip().startswith('[start-widget'):
+                if container:
+                    widget = {'type': attr_data['type'], 'body': {}}
+                    container['widgets'].append(widget)
+                else:
+                    widget = {'body': {}}
+                    data['widgets'][attr_data['name']] = widget
+            elif line.strip().startswith('[start-attribute'):
+                attribute_lines = []
+                print 'ATTRDATA ', attr_data
+                is_markdown = attr_data.get('is_markdown', '').lower() == 'true'
+                print 'START ATTR ', is_markdown
+                current_attribute_name = attr_data['name']
+            elif line.strip().startswith('[end-attribute]'):
+                attr_html = '\n'.join(attribute_lines)
+                print 'LINES ', len(attribute_lines)
+                if is_markdown:
+                    attr_html = markdown.markdown(attr_html, ['fenced_code']) 
+                    attr_html = attr_html.replace('&amp;lbrace;', '&#123;')
+                    print 'PARSE MARKDOWN FENCED', is_markdown
+                widget['body'][current_attribute_name] = attr_html
+                attribute_lines = None
+                current_attribute_name = None
+                is_markdown = None
+            elif line.strip().startswith('[end-widget]'):
+                widget = None
+            elif line.strip().startswith('[end-container]'):
+                container = None
+            elif attribute_lines != None:
+                attribute_lines.append(line)
+        
+            
 
     def _clean_html(self, html):
         html = html.replace('{{', '&#123;&#123;')
