@@ -263,7 +263,7 @@ class FileDetails(Propertized):
         details._hydrate_content_and_metadata()
         return details
 
-    _html_comment_re = re.compile(r"\[hubspot-metadata\]-->([\w\W]*?)<!--\[end-hubspot-metadata\]")
+    _html_comment_re = re.compile(r"\[hubspot-metadata\]([\w\W]*?)\[end-hubspot-metadata\]")
     _js_comment_re = re.compile(r"\[hubspot-metadata\]([\w\W]*?)\[end-hubspot-metadata\]")
     def _hydrate_content_and_metadata(self):
         if not self.is_text_file:
@@ -271,11 +271,11 @@ class FileDetails(Propertized):
         f = codecs.open(self.full_local_path, 'r', 'utf-8')
         self.content = f.read()
         f.close()
-
         m = self._html_comment_re.search(self.content)
         if m:
             try:
-                self.metadata = json.loads(m.group(1))
+                meta_json = '\n'.join(m.group(0).split('\n')[1:-1])
+                self.metadata = json.loads(meta_json)
             except:
                 print 'Error parsing the meta data for ' + self.full_local_path
                 traceback.print_exc()
@@ -450,32 +450,8 @@ class PageUploader(BaseUploader):
             data['deleted_at'] = 0
         data['widget_containers'] = {}
         data['widgets'] = {}
-        if self.file_details.content.find('[start-widget') < 100:
-            self._hydrate_widgets_via_brackets(data)
-        else:
-            self._hydrate_widgets_via_pyquery(data) 
 
-
-    def _hydrate_widgets_via_pyquery(self, data):
-        dom = pq('<div id="pyquery">' + self.file_details.content + '</div>')
-        for div in dom("#pyquery > div"):
-            if div.attrib.get('container_name'):
-                container = {'widgets': []}
-                data['widget_containers'][div.attrib['container_name']] = container
-                for widget_div in div.getchildren():
-                    widget = {'body': {}, 'type': widget_div.get('widget_type')}
-                    container['widgets'].append(widget)
-                    for attr_div in widget_div.getchildren():
-                        html = pq(attr_div).html()
-                        html = self._clean_html(html)
-                        widget['body'][attr_div.get('attribute_name')] = html
-            elif div.attrib.get('widget_name'):
-                widget = {'body': {}}
-                data['widgets'][div.attrib['widget_name']] = widget
-                for attr_div in div.getchildren():
-                    html = pq(attr_div).html()
-                    html = self._clean_html(html)
-                    widget['body'][attr_div.get('attribute_name')] = html
+        self._hydrate_widgets_via_brackets(data)
         
     _attr_re = re.compile(r'(\w+)=\"([^"]*)\"')
     def _hydrate_widgets_via_brackets(self, data):
@@ -570,7 +546,7 @@ class SiteMapUploader(BaseUploader):
                 build_dicts(child_node)
         build_dicts(tree)
         slugs_in = '&'.join(['slug__in=%s' % slug for slug in all_slugs])
-        url = 'https://api.hubapi.com/content/api/v2/pages?%s&hapikey=%s&portalId=%s' % (slugs_in, self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/pages?%s&hapikey=%s&portalId=%s&limit=500' % (slugs_in, self.options.api_key, self.options.hub_id)
         r = requests.get(url, verify=False)
         for page in r.json().get('objects', []):
             slug_to_node[page['slug']]['page_id'] = page['id']
