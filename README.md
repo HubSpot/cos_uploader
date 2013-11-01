@@ -43,9 +43,12 @@ To get all the options, run with the help flag:
 #### Windows
 
 Download the syncer executable from here:
+
 https://github.com/HubSpot/cos_syncer/releases/download/v0.11-alpha/sync_to_cos.exe
 
-Double click the file once download it, give it permission to run when the security dialog pops up, and then follow the instructions.
+Drag the downloaded file into the folder with your assets.  Double click the file to run it, give it permission when the security dialog pops up, then follow the instructions.
+
+You can also run this executable from the command line or install it into your system path so you can run the command from any folder.
 
 ### Installing from the Source
 
