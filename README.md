@@ -23,7 +23,7 @@ cd /path/to/your/asset/folder
 * Run the following command to download the binary and make it executable:
 
 ```
-wget https://github.com/HubSpot/cos_syncer/releases/download/v0.10-alpha/sync_to_cos_osx -O sync_to_cos; 
+wget https://github.com/HubSpot/cos_syncer/releases/download/v0.11-alpha/sync_to_cos_osx -O sync_to_cos; 
 chmod 700 sync_to_cos;
 ```
 
