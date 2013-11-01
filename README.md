@@ -42,10 +42,10 @@ To get all the options, run with the help flag:
 
 #### Windows
 
-...coming soon..
+Download the syncer executable from here:
+https://github.com/HubSpot/cos_syncer/releases/download/v0.11-alpha/sync_to_cos.exe
 
-
-
+Double click the file once download it, give it permission to run when the security dialog pops up, and then follow the instructions.
 
 ### Installing from the Source
 
