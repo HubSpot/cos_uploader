@@ -1,6 +1,7 @@
 '''
 '''
 import codecs
+from copy import deepcopy
 import json
 import markdown
 import os
@@ -240,6 +241,7 @@ class FileDetails(Propertized):
     relative_path = Prop('')
     full_local_path = Prop('')
     metadata = Prop(dict)
+    original_metadata = Prop(dict)
     content = Prop('')
     cos_type = Prop('')
     is_text_file = Prop(False)
@@ -263,15 +265,14 @@ class FileDetails(Propertized):
         details._hydrate_content_and_metadata()
         return details
 
-    _html_comment_re = re.compile(r"\[hubspot-metadata\]([\w\W]*?)\[end-hubspot-metadata\]")
-    _js_comment_re = re.compile(r"\[hubspot-metadata\]([\w\W]*?)\[end-hubspot-metadata\]")
+    _json_comment_re = re.compile(r"\[hubspot-metadata]([\w\W]*?)\[end-hubspot-metadata\]")
     def _hydrate_content_and_metadata(self):
         if not self.is_text_file:
             return
         f = codecs.open(self.full_local_path, 'r', 'utf-8')
         self.content = f.read()
         f.close()
-        m = self._html_comment_re.search(self.content)
+        m = self._json_comment_re.search(self.content)
         if m:
             try:
                 meta_json = '\n'.join(m.group(0).split('\n')[1:-1])
@@ -279,15 +280,42 @@ class FileDetails(Propertized):
             except:
                 print 'Error parsing the meta data for ' + self.full_local_path
                 traceback.print_exc()
-        m = self._js_comment_re.search(self.content)
-        if m:
-            try:
-                meta_json = '\n'.join(m.group(0).split('\n')[1:-1])
-                self.metadata = json.loads(meta_json)
-            except:
-                traceback.print_exc()
-        self.content = self._html_comment_re.sub('', self.content)
-        self.content = self._js_comment_re.sub('', self.content)
+        self.original_metadata = deepcopy(self.metadata)
+        self.content = self._json_comment_re.sub('', self.content)
+
+    def update_metadata(self, new_metadata):
+        if not new_metadata:
+            return
+        print "Update metadata?"
+        has_changes = False
+        for key, val in new_metadata.items():
+            if self.metadata.get(key) != val:
+                has_changes = True
+        if not has_changes:
+            return
+        print "Has changes"
+        data = deepcopy(self.metadata)
+        data.update(new_metadata)
+        data = OrderedDict(sorted(data.items(), key=lambda t: t[0]))        
+
+        new_json = json.dumps(data, indent=4)
+        
+        f = codecs.open(self.full_local_path, 'r', 'utf-8')
+        org_content = f.read()
+        f.close()
+        def replacer(m):
+            parts = m.group(0).split('\n')
+            return parts[0].strip() + '\n' + new_json + '\n' + parts[-1].strip()
+
+        new_content = self._json_comment_re.sub(replacer, org_content)
+        print new_content
+        if new_content == org_content:
+            return
+        print "Write new content"
+        f = codecs.open(self.full_local_path, 'w', 'utf-8')
+        f.write(new_content)
+        f.close()
+        
 
 class BaseUploader(Propertized):
     file_details = Prop() 
@@ -308,16 +336,22 @@ class BaseUploader(Propertized):
             print 'RESULT ', r
             if r.status_code > 299:
                 print r.content
-            return r.json()['id']
+            self.object_id = r.json()['id']
         else:
             url = self.get_put_url(object_id)
             print 'PUT URL IS ', url
             r = requests.put(url, data=json.dumps(data), verify=False)
             print 'RESULT ', r
-            return object_id
+            self.object_id = object_id
+        self.process_post_upload()
+        return self.object_id
 
     def lookup_id(self, data):
         return None
+
+    def process_post_upload(self):
+        if self.file_details.cos_type in ('templates', 'pages', 'styles', 'scripts'):
+            self.file_details.update_metadata({'id': self.object_id})
 
     def make_json_data(self):
         data = {}
