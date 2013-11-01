@@ -30,6 +30,7 @@ def main():
     if not options.hub_id:
         is_interactive_mode = True
         handle_interactive_mode(options)
+    options.target_folder = options.target_folder.replace('\\', '/')
     if not os.path.isdir(options.target_folder):
         print "The target folder (%s) does not exist" % options.target_folder
         sys.exit(1)
@@ -129,9 +130,8 @@ class FileSyncEventHandler(FileSystemEventHandler):
     def do_on_modified(self, event):
         if event.is_directory:
             return
-        if '/.sync-history.json' in event.src_path:
+        if '.sync-history.json' in event.src_path:
             return
-        print 'EVENT ', event, event.key 
         self.syncer.handle_file_changed(event.src_path)
 
 def crawl_directory_and_load_file_details(folder):
@@ -144,10 +144,12 @@ def crawl_directory_and_load_file_details(folder):
             for file_name in file_names:
                 if file_name.endswith('~') or '.#' in file_name or file_name.endswith('#') or file_name.startswith('.'):
                     continue
-                print 'FILE NAME ', file_name
+                # Make windows use unix style paths
+                dir_path = dir_path.replace('\\', '/')
                 relative_path = dir_path.replace(type_folder, '').strip('/') + '/' + file_name
                 relative_path = relative_path.strip('/')
                 full_path = dir_path + '/' + file_name
+                print "Scanning ",cos_type, " ", relative_path
                 details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
                 all_file_details.append(details)
     return all_file_details
@@ -159,13 +161,16 @@ class Syncer(object):
         # Rate limit to average of 20 updates per minute
 
     def handle_file_changed(self, full_path):
+        full_path = full_path.replace('\\', '/')
         relative_path = full_path.replace(self.options.target_folder, '').strip('/')
-        print 'RELATIVE PATH ', relative_path
         cos_type = relative_path.split('/')[0]
+        relative_path = '/'.join(relative_path.split('/')[1:])
         if cos_type not in cos_types:
             return
-        relative_path = '/'.join(relative_path.split('/')[1:])
-        if relative_path.startswith('.'):
+        if relative_path[-1] in ('~', '#'):
+            return
+        file_name = os.path.split(relative_path)[1]
+        if file_name[0] == '.':
             return
         details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
         self.sync_file_details(details)
@@ -181,8 +186,10 @@ class Syncer(object):
 
     def sync_if_changed(self, file_details):
         if file_details.last_modified_at > self._get_last_synced_at(file_details) and file_details.size != self._get_last_size(file_details):
+            print "File has changed: ", file_details.relative_path
             self.sync_file_details(file_details)
-
+        else:
+            print "File already up to date: ", file_details.relative_path
     def sync_file_details(self, file_details):
         uploader_cls = cos_types_to_uploader[file_details.cos_type]
         uploader = uploader_cls(
@@ -190,6 +197,7 @@ class Syncer(object):
             options=self.options,
             object_id=self._get_object_id(file_details),
             )
+        print "Syncing file ", file_details.cos_type, " ", file_details.relative_path
         object_id = uploader.upload()
         self._update_sync_history(file_details.cos_type + '/' + file_details.relative_path, object_id, file_details.size)
         self._save_sync_history()
