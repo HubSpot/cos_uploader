@@ -426,7 +426,7 @@ Response body was:
         self.hydrate_json_data(data)
         return data
 
-    def check_valid(self):
+    def check_valid(self, data):
         return True
 
     def hydrate_json_data(self, data):
