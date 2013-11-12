@@ -3,6 +3,7 @@
 import codecs
 from copy import deepcopy
 import json
+import logging
 import markdown
 import os
 from ordereddict import OrderedDict
@@ -14,6 +15,10 @@ import yaml
 import sys
 import time
 import traceback
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("sync_to_cos")
+
 
 try:
     from watchdog.observers import Observer
@@ -33,10 +38,10 @@ def main():
         handle_interactive_mode(options)
     options.target_folder = options.target_folder.replace('\\', '/')
     if not os.path.isdir(options.target_folder):
-        print "The target folder (%s) does not exist" % options.target_folder
+        logger.fatal("The target folder (%s) does not exist" % options.target_folder)
         sys.exit(1)
     if not os.path.isdir(options.target_folder + "/files") and not os.path.isdir(options.target_folder + "/templates. Exiting."):
-        print "You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to sync.  Exiting." % options.target_folder
+        logger.fatal("You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to sync.  Exiting." % options.target_folder)
         sys.exit(1)
         
     if options.action == 'sync':
@@ -48,7 +53,8 @@ def main():
 
     if is_interactive_mode:
         print "Quitting..."
-        time.sleep(7)
+        if os.name == 'nt':
+            time.sleep(7)
 
 def handle_interactive_mode(options):
     target_folder = raw_input("What folder do you want to sync? (Leave blank to use current folder \"%s\"): " % options.target_folder)
@@ -88,12 +94,13 @@ def handle_interactive_mode(options):
             yaml.dump(config, f)
             f.close()
 
-    print "Syncing then watching folder " + options.target_folder
+    logger.info("Syncing then watching folder " + options.target_folder)
 
 def fatal(msg):
-    print msg
-    print "Exiting..."
-    time.sleep(7)     
+    logger.fatal(msg)
+    logger.fatal("Exiting...")
+    if os.name == 'nt':
+        time.sleep(7)     
     sys.exit(1)                 
 
 def sync_folder(options):
@@ -128,10 +135,31 @@ class FileSyncEventHandler(FileSystemEventHandler):
         except:
             traceback.print_exc()
 
-    def do_on_modified(self, event):
-        if event.is_directory:
+    def on_created(self, event):
+        if self._should_skip(event):
             return
+        try:
+            self.syncer.handle_file_changed(event.src_path)            
+        except:
+            traceback.print_exc()
+
+    def on_moved(self, event):
+        if self._should_skip(event):
+            return
+        try:
+            self.syncer.handle_file_changed(event.dest_path)            
+        except:
+            traceback.print_exc()
+
+    def _should_skip(self, event):
+        if event.is_directory:
+            return True
         if '.sync-history.json' in event.src_path:
+            return True
+        return False
+
+    def do_on_modified(self, event):
+        if self._should_skip(event):
             return
         self.syncer.handle_file_changed(event.src_path)
 
@@ -150,8 +178,12 @@ def crawl_directory_and_load_file_details(folder):
                 relative_path = dir_path.replace(type_folder, '').strip('/') + '/' + file_name
                 relative_path = relative_path.strip('/')
                 full_path = dir_path + '/' + file_name
-                print "Scanning ",cos_type, " ", relative_path
-                details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
+                #logger.info("Scanning %s %s" % (cos_type, relative_path))
+                try:
+                    details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
+                except UserError as e:
+                    error(e.subject, e.message)
+                    continue
                 all_file_details.append(details)
     return all_file_details
 
@@ -173,8 +205,11 @@ class Syncer(object):
         file_name = os.path.split(relative_path)[1]
         if file_name[0] == '.':
             return
-        details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
-        self.sync_file_details(details)
+        try:
+            details = FileDetails().load_from_file_path(full_path, relative_path, cos_type)
+            self.sync_file_details(details)
+        except UserError as e:
+            error(e.subject, e.message)
 
     def _get_last_synced_at(self, file_details):
         return self.sync_history.get(file_details.cos_type + '/' + file_details.relative_path, {}).get('last_sync_at', 0)
@@ -187,10 +222,11 @@ class Syncer(object):
 
     def sync_if_changed(self, file_details):
         if file_details.last_modified_at > self._get_last_synced_at(file_details) and file_details.size != self._get_last_size(file_details):
-            print "File has changed: ", file_details.relative_path
+            logger.info("File has changed: %s" % file_details.relative_path)
             self.sync_file_details(file_details)
         else:
-            print "File already up to date: ", file_details.relative_path
+            pass
+            #logger.debug("File already up to date: %s " % file_details.relative_path)
     def sync_file_details(self, file_details):
         uploader_cls = cos_types_to_uploader[file_details.cos_type]
         uploader = uploader_cls(
@@ -198,8 +234,12 @@ class Syncer(object):
             options=self.options,
             object_id=self._get_object_id(file_details),
             )
-        print "Syncing file ", file_details.cos_type, " ", file_details.relative_path
-        object_id = uploader.upload()
+        logger.info("Syncing file %s %s" % (file_details.cos_type, file_details.relative_path))
+        try:
+            object_id = uploader.upload()
+        except UserError as e:
+            error(e.subject, e.message)
+            return
         self._update_sync_history(file_details.cos_type + '/' + file_details.relative_path, object_id, file_details.size)
         self._save_sync_history()
 
@@ -273,27 +313,30 @@ class FileDetails(Propertized):
         self.content = f.read()
         f.close()
         m = self._json_comment_re.search(self.content)
+        meta_json = ''
         if m:
             try:
                 meta_json = '\n'.join(m.group(0).split('\n')[1:-1])
                 self.metadata = json.loads(meta_json)
-            except:
-                print 'Error parsing the meta data for ' + self.full_local_path
-                traceback.print_exc()
+            except Exception as e:
+                subject = 'Could not parse the metadata for %s' % self.full_local_path
+                msg = str(e.message)
+                the_json = '\n'.join(["%02d| %s" % (i, line) for (i, line) in enumerate(meta_json.split('\n'))])
+                msg += "\nThe full JSON (with line numbers) that we tried to parse was:\n%s\n" % the_json
+                msg += "Check to make sure you are double \"quoting\" everything except booleans and integers.  Make sure you have commas between items in lists in dictionaries, but no comma after the last item.\n"
+                raise UserError(subject, msg)
         self.original_metadata = deepcopy(self.metadata)
         self.content = self._json_comment_re.sub('', self.content)
 
     def update_metadata(self, new_metadata):
         if not new_metadata:
             return
-        print "Update metadata?"
         has_changes = False
         for key, val in new_metadata.items():
             if self.metadata.get(key) != val:
                 has_changes = True
         if not has_changes:
             return
-        print "Has changes"
         data = deepcopy(self.metadata)
         data.update(new_metadata)
         data = OrderedDict(sorted(data.items(), key=lambda t: t[0]))        
@@ -308,14 +351,30 @@ class FileDetails(Propertized):
             return parts[0].strip() + '\n' + new_json + '\n' + parts[-1].strip()
 
         new_content = self._json_comment_re.sub(replacer, org_content)
-        print new_content
         if new_content == org_content:
             return
-        print "Write new content"
+        logger.debug("Writing new metadata")
         f = codecs.open(self.full_local_path, 'w', 'utf-8')
         f.write(new_content)
         f.close()
+
+def error(subject, msg):
+    logger.error('''\n
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ERROR! %s
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         
+%s
+
+--------------------------------------------------------
+    ''' % (subject, msg))
+    
+
+
+class UserError(Exception):
+    def __init__(self, subject, message):
+        self.subject = subject
+        self.message = message
 
 class BaseUploader(Propertized):
     file_details = Prop() 
@@ -328,21 +387,29 @@ class BaseUploader(Propertized):
         data = self.make_json_data()
         if not object_id:
             object_id = self.lookup_id(data)
-        print self.file_details.full_local_path
+        self.check_valid(data)
         if not object_id:
             url = self.get_create_url()
-            print 'POST URL IS: ', url
+            logger.info('POST new data to %s' % url)
             r = requests.post(url, data=json.dumps(data), verify=False)
-            print 'RESULT ', r
-            if r.status_code > 299:
-                print r.content
-            self.object_id = r.json()['id']
+            self.object_id = r.json().get('id', None)
+            if r.status_code < 300:
+                logger.info('Create succeeded for file %s The ID is %s' % (self.file_details.relative_path, self.object_id))
         else:
             url = self.get_put_url(object_id)
-            print 'PUT URL IS ', url
+            logger.info('PUT new data to %s' % url)
             r = requests.put(url, data=json.dumps(data), verify=False)
-            print 'RESULT ', r
             self.object_id = object_id
+            if r.status_code < 300:
+                logger.info('Update succeeded for file %s' % self.file_details.relative_path)
+        if r.status_code > 299:
+            msg = '''\
+Status code was: %s
+Response body was:
+
+%s
+''' % (r.status_code, r.content)
+            raise UserError("Problem uploading to the COS API %s " % self.file_details.relative_path, msg)
         self.process_post_upload()
         return self.object_id
 
@@ -358,6 +425,9 @@ class BaseUploader(Propertized):
         data.update(self.file_details.metadata)
         self.hydrate_json_data(data)
         return data
+
+    def check_valid(self):
+        return True
 
     def hydrate_json_data(self, data):
         raise Exception("implement me")
@@ -384,6 +454,8 @@ class TemplateUploader(BaseUploader):
     endpoint = 'templates'
 
     def lookup_id(self, data):
+        if not 'path' in data:
+            return
         url = 'https://api.hubapi.com/content/api/v2/templates?path=%s&hapikey=%s&portalId=%s' % (data['path'], self.options.api_key, self.options.hub_id)
         r = requests.get(url, verify=False)
         result = r.json()
@@ -392,8 +464,71 @@ class TemplateUploader(BaseUploader):
         else:
             return result.get('objects')[0]['id']
 
+    def check_valid(self, data):
+        msg = ''
+        if not data.get('path') or data.get('category_id') == None or not data.get('template_type') or data.get('is_available_for_new_content') == None:
+            msg = """\
+Your template .html file must include a JSON metadata section for the category and path of the template:
+
+<!--
+[hubspot-metadata]
+{
+   "path": "my-folder/my-file.html",
+   "category": "page",
+   "creatable": false            
+}
+[end-hubspot-metadata]
+-->
+
+Allowed categories are: page, email, blog, asset or include.  Set to 'page' if you want to be able to create a new landing page or site page with this template.  Set to 'asset' for css or javascript files.  Set to 'include' for any template that will be included by another template, as opposed to being used directly.
+
+The "creatable" parameter should be set to 'true' when you want to show this template in the new page, blog post, or email creation screen.  
+
+You can set 'creatable' to false while you initially work on your template, and then change it to 'true' when you are ready to create a page with it.
+
+If 'creatable' is true, then the template must have valid source content for that category.  For instance, an email must have unsubscribe tokens, a landing page must have the {{ standard_header_includes }} and {{ standard_footer_includes }} tokens.
+
+Side note - the metadata section will be stripped from the HTML when uploaded.
+"""
+            raise UserError("Template is not valid %s " % self.file_details.full_local_path, msg)
+
     def hydrate_json_data(self, data):
         data['source'] = self.file_details.content
+        category = data.get('category')
+        if category in ("blog", 'blog_post'):
+            data['category_id'] = 3
+            data['template_type'] = 6
+        elif category == 'blog_listing':
+            data['category_id'] = 3
+            data['template_type'] = 7
+        elif category in ('page', 'landing_page'):
+            data['category_id'] = 1
+            data['template_type'] = 4
+        elif category == 'error_page':
+            category = 0
+            data['template_type'] = 11
+        elif category == 'email':
+            data['category_id'] = 2
+            data['template_type'] = 2
+        elif 'category' in data:
+            data['category_id'] = 0
+            data['template_type'] = 0
+
+        if 'category' in data:
+            del data['category']
+        if data.get('category_id') == 0:
+            data['is_available_for_new_content'] = False
+            
+
+        if 'creatable' in data:
+            data['is_available_for_new_content'] = data['creatable']
+
+        if data.get('path'):
+            if data['path'].count('/') == 2:
+                data['path'] = 'custom/' + data['path']
+            if data['path'].count('/') == 1:
+                data['path'] = 'custom/' + data.get('category', 'page') + 's' + '/' + data['path']
+                
 
         
 class StyleUploader(TemplateUploader):
@@ -414,22 +549,22 @@ class FileUploader(BaseUploader):
             "folder_paths": folder,
             "overwrite": "true"
          }
-        print "FILE DATA ", data 
+        logger.info("FILE DATA %s " % data)
         object_id = self.get_id_from_details()
         if not object_id:
             object_id = self.lookup_id(data)
 
         if not object_id:
             url = self.get_create_url()
-            print 'POST URL IS ', url
+            logger.info('POST URL IS %s' % url)
             r = requests.post(url, data=data, files=files, verify=False)
-            print "RESULT ", r
+            logger.info("RESULT %s " % r)
             return r.json()['objects'][0]['id']
         else:
             url = self.get_put_url(object_id)
-            print 'POST URL IS ', url
+            logger.info('POST URL IS %s' % url)
             r = requests.post(url, data=data, files=files, verify=False)
-            print 'RESULT ', r
+            logger.info('RESULT %s' % r)
             return object_id
             
 
@@ -536,7 +671,6 @@ class PageUploader(BaseUploader):
             link = match.group(1)
             if not '//' in link and not link.startswith('/'):
                 link = 'http://cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
-            print 'LINK REPLACER ', link
             return 'src="%s"' % link
         html = self._fix_img_src.sub(replacer, html)
         return html
