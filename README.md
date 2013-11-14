@@ -20,10 +20,10 @@ You must first get an API key for your HubSpot site.  These are only available f
 cd /path/to/your/asset/folder
 ```
 
-* Run the following command to download the binary and make it executable:
+* Run the following commands to download the binary and make it executable:
 
 ```
-wget https://github.com/HubSpot/cos_syncer/releases/download/v0.11-alpha/sync_to_cos_osx -O sync_to_cos; 
+curl -L -o sync_to_cos "https://github.com/HubSpot/cos_syncer/releases/download/v0.11-alpha/sync_to_cos_osx";
 chmod 700 sync_to_cos;
 ```
 
