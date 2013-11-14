@@ -67,130 +67,35 @@ The expected folder structure is:
 
 When you run the sync, any relative links in a template file to a static file will be converted to the proper URL in our cloud content delivery network.
 
-Installing from the Source
------------------------------------
+All files in templates must have a section in the file for metadata. The metadata is in JSON format and enclosed between two metadata tokens.
 
-You will need:
-* python 2.7.x Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
-* git
-* pip (https://pypi.python.org/pypi/pip )
-* xcode (on a Mac OSX)
-* virtualenv (https://pypi.python.org/pypi/virtualenv)
+Here is an example:
 
-With all the above installed, you can do the following to install and work with the script locally:
-
-```bash
-# Clone the git repo to get the code
-git clone git@github.com:HubSpot/cos_syncer.git
-# Go into the main code directory
-cd cos_syncer
-# Create a python virtualenv in order to hold dependencies
-mkvirtualenv cos_syncer
-# install dependencies
-pip install -r requirements.pip
-# create a wrapper script that will run from the command line anywhere
-echo "source $WORKON_HOME/cos_syncer/bin/activate;python "$(pwd)'/cos_syncer/sync_to_cos.py $*' > "/usr/local/bin/sync_to_cos"
-# give the wrapper script execute privileges
-chmod 700 /usr/local/bin/sync_to_cos
 ```
+...my template...
+  </body>
+</html>
+<!--
 
-Now you should be able to go to the folder with your files in it from the command line.  Enter the following command, and the help will be printed out:
-```
->sync_to_cos
-``` 
-
-To use the sync script with your portal, go to https://app.hubspot.com/keys/get and get an API key for your portal.
-
-Then cd to the folder with your files and run:
-```>sync_to_cos --hub-id=(your hubid or portalid) --api-key=(your api key) -a sync```
-
-
-Advanced Usage
-----------------------------------------
-
-A python script for syncing a file tree to the HubSpot COS
-
-
-Expected folder structure:
-
-files/
-templates/
-scripts/
-styles/
-blog-posts/
-pages/
-site-maps/
-
-**files** are static assets that should not change much.  This would include images, vendor libraries such as jquery ui, documents, etc.  
-
-**templates** are .html template files that can be used to create pages.
-
-**scripts** are javascript files that you will be changing more often.
-
-**styles** are css files that you will be changing more often.
-
-**pages** are actual publishable pages.  These require their own special syntax to work properly.
-
-**site-maps**
-
-**blog-posts** These can be written in .html or markdown.  Metadata is required.
-
-
-Add metadata to any .html, .js, or .css file, by putting JSON inside a comment.  The JSON is identicaly to the allowed JSON for a PUT or POST request in the relevant REST API.  The comment will be stripped during the upload process.
-
-&lt;!--[hubspot-metadata]
+[hubspot-metadata]
 {
-    "": ""
+   "path": "custom/pages/my-folder/my-file.html",
+   "category": "page",
+   "creatable": false            
 }
-[end-hubspot-metadata]--&gt;
+[end-hubspot-metadata]
 
-/\*[hubspot-metadata]
-
-[end-hubspot-metadata]\*/
-
-
-Don't like the default file structure?
-
-If you include type metadata in your file, we will treat it as that type.
-{
-   "cos_type": "style"
-}
-
-**Page Syntax**
-
-```html
-<div id="page_content">
-<div widget_name="">
-    <div attribute_name="html">
-
-    </div>
-</div>
-<div container_name="left_column">
-     <div widget_type="rich_text">
-          <div attribute_name="html">
-This is the HTML that will be stored in the widget.
-Relative URLS
-          </div>
-     </div>
-</div>
-</div>
+-->
 ```
 
+This section can be put anywhere in the file.  It will be stripped from the file when uploaded. You can also surround the block with comment tokens to avoid errors when developing locally.
 
+The "path" parameter controls where the template will show up in template builder.  This path can also be used in {% include %} statements by other templates.
 
+Allowed values for "category" are: email, blog, asset or include.  Set to 'page' if you want to be able to create a new landing page or site page with this template.  Set to 'asset' for css or javascript files.  Set to 'include' for any template that will be included by another template, as opposed to being used directly.
 
-**Blog post syntax**
+The "creatable" parameter should be set to 'true' when you want to show this template in the new page, blog post, or email creation screen.  
 
-Markdown version:
-```
-The title of the blog post
-=========================
+You can set 'creatable' to false while you initially work on your template, and then change it to 'true' when you are ready to create a page with it.
 
-
-<!--[hubspot-metadata]
-{ 
-"slug": "an-api-managed-blog-post"
-}
-[end-hubspot-metadata]-->
-
-```
+If 'creatable' is true, then the template must have valid source content for that category.  For instance, an email template must have CAN-SPAM and unsubscribe tokens and a page template must have the {{ standard_header_includes }} and {{ standard_footer_includes }} tokens.
