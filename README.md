@@ -3,12 +3,14 @@ ALPHA not ready for real use
 
 The cos_syncer will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
 
-**Required before you start** 
+Required before you start
+----------------------------------
 
 You must first get an API key for your HubSpot site.  These are only available for Professional and Enterprise customers.  Get your API key from here: https://app.hubspot.com/keys/get
 
 
-### Easy Install (Binary Distribution)
+Easy Install (Binary Distribution)
+--------------------------------
 
 
 #### Mac OSX 10.6+
@@ -50,7 +52,23 @@ Drag the downloaded file into the folder with your assets.  Double click the fil
 
 You can also run this executable from the command line or install it into your system path so you can run the command from any folder.
 
-### Installing from the Source
+
+
+Basic Usage
+--------------------------
+The expected folder structure is:
+
+* files/
+* templates/
+
+**files** contain static assets such images, javascript, css, etc.
+
+**templates** contain files with HubSpot Markup Language.  "templates" contain tokens and tags that indicate editable areas for the end customer to edit via the UI.  Templates also contain dynamic logic.
+
+When you run the sync, any relative links in a template file to a static file will be converted to the proper URL in our cloud content delivery network.
+
+Installing from the Source
+-----------------------------------
 
 The cos_syncer requires python 2.7.x.  Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
 
@@ -79,21 +97,6 @@ To use the sync script with your portal, go to https://app.hubspot.com/keys/get 
 
 Then cd to the folder with your files and run:
 ```>sync_to_cos --hub-id=(your hubid or portalid) --api-key=(your api key) -a sync```
-
-
-Basic Usage
---------------------------
-The expected folder structure is:
-
-* files/
-* templates/
-
-**files** contain static assets such images, javascript, css, etc.
-
-**templates** contain files with HubSpot Markup Language.  "templates" contain tokens and tags that indicate editable areas for the end customer to edit via the UI.  Templates also contain dynamic logic.
-
-When you run the sync, any relative links in a template file to a static file will be converted to the proper URL in our cloud content delivery network.
-
 
 
 Advanced Usage
