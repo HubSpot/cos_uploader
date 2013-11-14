@@ -492,7 +492,7 @@ class TemplateUploader(BaseUploader):
 
     def check_valid(self, data):
         msg = ''
-        if not data.get('path') or data.get('category_id') == None or not data.get('template_type') or data.get('is_available_for_new_content') == None:
+        if not data.get('path') or data.get('category_id') == None or data.get('template_type') == None or data.get('is_available_for_new_content') == None:
             msg = """\
 Your template file must include a JSON metadata section.  The metadata tells us what type of content the template is associated with, whether
 
