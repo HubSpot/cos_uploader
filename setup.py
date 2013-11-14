@@ -23,9 +23,12 @@ setup(
         'Markdown>=2.3.0',
         'wsgiref>=0.1.2',
         'PyYAML>=3.10',
+        'mockery',
+        'raven',
     ],
     dependency_links=[
         'http://github.com/HubSpot/snakecharmer/tarball/master#egg=snakecharmer-1.0.0',        
+        'http://github.com/HubSpot/mockery/tarball/master#egg=mockery-1.0.0'
         ]
     ,
 )

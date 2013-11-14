@@ -5,6 +5,7 @@ from copy import deepcopy
 import json
 import logging
 import markdown
+from pprint import pprint, pformat
 import os
 from ordereddict import OrderedDict
 import re
@@ -16,8 +17,13 @@ import sys
 import time
 import traceback
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("sync_to_cos")
+from error_reporting import report_exception
+
+if sys.argv[0].endswith('.py'):
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("_")
 
 
 try:
@@ -30,8 +36,17 @@ except:
 from snakecharmer.propertized import Propertized, Prop
 from snakecharmer.script_options import ScriptOptions, Opt
  
-def main():
-    options = Options.from_argv()
+def main(options=None):
+    options = options or Options.from_argv()
+    try:
+        do_main(options)
+    except Exception:
+        if not options.dont_report_errors:
+            print 'CALL REPORT'
+            report_exception()
+        raise
+
+def do_main(options):
     is_interactive_mode = False
     if not options.hub_id:
         is_interactive_mode = True
@@ -108,16 +123,21 @@ def sync_folder(options):
     syncer = Syncer(options)
     for file_details in file_details:
         syncer.sync_if_changed(file_details)
+    logger.info("Latest changes have beens synced")
  
+_force_quit = False
 def watch_folder(options):
     sync_folder(options)
     event_handler = FileSyncEventHandler(options)
     observer = Observer()
     observer.schedule(event_handler, path=options.target_folder, recursive=True)
     observer.start()
+    logger.info("Watching the target directory for changes")
     try:
         while True:
-            time.sleep(1)
+            if _force_quit:
+                break
+            time.sleep(.2)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()   
@@ -270,11 +290,12 @@ if default_folder == os.environ.get('HOME'):
     default_folder = os.path.dirname(sys.argv[0])
 
 class Options(ScriptOptions):
-    action = Opt(choices=['watch', 'sync'])
-    target_folder = Opt(default=default_folder)
-    hub_id = Opt()
-    api_key = Opt()
-    use_buffer = Opt()
+    action = Opt(choices=['watch', 'sync'], help="The action. Choose 'sync' for a one time sync.  Chose 'watch' to sync and then continue to watch the directories for changes and sync all changes")
+    target_folder = Opt(default=default_folder, help='The folder you want to sync.')
+    hub_id = Opt(help='The hub_id or portal_id for your HubSpot account')
+    api_key = Opt(help='The api key.  Get your key from https://app.hubspot.com/keys/get Only professional and enterprise portals can get a key')
+    dont_report_errors = Opt(action='store_true', help="By default, we send all errors to an error reporting service so that HubSpot engineers can fix bugs.  Include this option to disable error reporting")
+    use_buffer = Opt(action='store_true', help='If set, the syncer will update the auto-save buffer rather than updating the live content')
 
 class FileDetails(Propertized):
     last_modified_at = Prop(0)
@@ -403,6 +424,11 @@ class BaseUploader(Propertized):
             if r.status_code < 300:
                 logger.info('Update succeeded for file %s' % self.file_details.relative_path)
         if r.status_code > 299:
+            response_content = r.content
+            try:
+                response_content = pprint(r.json())
+            except:
+                pass
             msg = '''\
 Status code was: %s
 Response body was:
@@ -468,27 +494,31 @@ class TemplateUploader(BaseUploader):
         msg = ''
         if not data.get('path') or data.get('category_id') == None or not data.get('template_type') or data.get('is_available_for_new_content') == None:
             msg = """\
-Your template .html file must include a JSON metadata section for the category and path of the template:
+Your template file must include a JSON metadata section.  The metadata tells us what type of content the template is associated with, whether
 
-<!--
+Here is an example metadata section:
+
 [hubspot-metadata]
 {
-   "path": "my-folder/my-file.html",
+   "path": "custom/pages/my-folder/my-file.html",
    "category": "page",
    "creatable": false            
 }
 [end-hubspot-metadata]
--->
 
-Allowed categories are: page, email, blog, asset or include.  Set to 'page' if you want to be able to create a new landing page or site page with this template.  Set to 'asset' for css or javascript files.  Set to 'include' for any template that will be included by another template, as opposed to being used directly.
+This section can be put anywhere in the file.  It will be stripped from the file when uploaded. You can also surround the block with comment tokens to avoid errors when developing locally.
+
+The "path" parameter controls where the template will show up in template builder.  This path can also be used in {% include %} statements by other templates.
+
+Allowed values for "category" are: email, blog, asset or include.  Set to 'page' if you want to be able to create a new landing page or site page with this template.  Set to 'asset' for css or javascript files.  Set to 'include' for any template that will be included by another template, as opposed to being used directly.
 
 The "creatable" parameter should be set to 'true' when you want to show this template in the new page, blog post, or email creation screen.  
 
 You can set 'creatable' to false while you initially work on your template, and then change it to 'true' when you are ready to create a page with it.
 
-If 'creatable' is true, then the template must have valid source content for that category.  For instance, an email must have unsubscribe tokens, a landing page must have the {{ standard_header_includes }} and {{ standard_footer_includes }} tokens.
+If 'creatable' is true, then the template must have valid source content for that category.  For instance, an email template must have CAN-SPAM and unsubscribe tokens and a page template must have the {{ standard_header_includes }} and {{ standard_footer_includes }} tokens.
 
-Side note - the metadata section will be stripped from the HTML when uploaded.
+
 """
             raise UserError("Template is not valid %s " % self.file_details.full_local_path, msg)
 
@@ -718,8 +748,7 @@ class SiteMapUploader(BaseUploader):
         r = requests.get(url, verify=False)
         for page in r.json().get('objects', []):
             slug_to_node[page['slug']]['page_id'] = page['id']
-        
-    
+
 
 cos_types_to_uploader = {
     'styles': StyleUploader,
