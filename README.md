@@ -90,12 +90,12 @@ Here is an example:
 
 This section can be put anywhere in the file.  It will be stripped from the file when uploaded. You can also surround the block with comment tokens to avoid errors when developing locally.
 
-The "path" parameter controls where the template will show up in template builder.  This path can also be used in {% include %} statements by other templates.
+The **path** parameter controls where the template will show up in template builder.  This path can also be used in {% include %} statements by other templates.
 
-Allowed values for "category" are: email, blog, asset or include.  Set to 'page' if you want to be able to create a new landing page or site page with this template.  Set to 'asset' for css or javascript files.  Set to 'include' for any template that will be included by another template, as opposed to being used directly.
+Allowed values for **category** are: email, blog, asset or include.  Set to *page* if you want to be able to create a new landing page or site page with this template.  Set to *asset* for css or javascript files.  Set to *include* for any template that will be included by another template, as opposed to being used directly.
 
-The "creatable" parameter should be set to 'true' when you want to show this template in the new page, blog post, or email creation screen.  
+The **creatable** parameter should be set to *true* when you want to show this template in the new page, blog post, or email creation screen.  
 
-You can set 'creatable' to false while you initially work on your template, and then change it to 'true' when you are ready to create a page with it.
+You can set **creatable** to *false* while you initially work on your template, and then change it to *true* when you are ready to create a page with it.
 
-If 'creatable' is true, then the template must have valid source content for that category.  For instance, an email template must have CAN-SPAM and unsubscribe tokens and a page template must have the {{ standard_header_includes }} and {{ standard_footer_includes }} tokens.
+If **creatable** is true, then the template must have valid source content for that category.  For instance, an email template must have CAN-SPAM and unsubscribe tokens and a page template must have the {{ standard_header_includes }} and {{ standard_footer_includes }} tokens.
