@@ -70,9 +70,15 @@ When you run the sync, any relative links in a template file to a static file wi
 Installing from the Source
 -----------------------------------
 
-The cos_syncer requires python 2.7.x.  Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
+You will need:
+* python 2.7.x Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
+* git
+* pip (https://pypi.python.org/pypi/pip )
+* xcode (on a Mac OSX)
+* virtualenv (https://pypi.python.org/pypi/virtualenv)
 
-Assuming you have git, python2.7, virtualenvwrapper, and pip installed:
+With all the above installed, you can do the following to install and work with the script locally:
+
 ```bash
 # Clone the git repo to get the code
 git clone git@github.com:HubSpot/cos_syncer.git
