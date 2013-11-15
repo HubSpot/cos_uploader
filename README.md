@@ -69,7 +69,7 @@ When you run the sync, any relative links in a template file to a static file wi
 
 All files in templates must have a section in the file for metadata. The metadata is in JSON format and enclosed between two metadata tokens.
 
-Here is an example:
+Here is an html example:
 
 ```
 ...my template...
