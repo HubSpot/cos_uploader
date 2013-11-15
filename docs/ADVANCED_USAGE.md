@@ -9,13 +9,13 @@ A python script for syncing a file tree to the HubSpot COS
 
 Expected folder structure:
 
-files/
-templates/
-scripts/
-styles/
-blog-posts/
-pages/
-site-maps/
+* files/
+* templates/
+* scripts/
+* styles/
+* blog-posts/
+* pages/
+* site-maps/
 
 **files** are static assets that should not change much.  This would include images, vendor libraries such as jquery ui, documents, etc.  
 
