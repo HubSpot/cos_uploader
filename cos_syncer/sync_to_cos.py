@@ -94,7 +94,7 @@ def handle_interactive_mode(options):
         fatal("That is not a valid hubid")
     key_msg = "Get a key at https://app.hubspot.com/keys/get"
     if options.api_key:
-        key_msg = 'Leave blank for default of "%s"' % options.api_key
+        key_msg = 'Leave blank for default of "%s"' % _obfuscate_key(options.api_key)
     options.api_key = raw_input("Enter your API key (%s): " % key_msg).strip() or options.api_key
     if not options.api_key:
         fatal("That is not a valid API key")
@@ -110,6 +110,10 @@ def handle_interactive_mode(options):
             f.close()
 
     logger.info("Syncing then watching folder " + options.target_folder)
+
+def _obfuscate_key(api_key):
+    parts = api_key.split('-')
+    return parts[0][:4] + 'x-xxxx-xxxx-x' + parts[-1][:4]
 
 def fatal(msg):
     logger.fatal(msg)
@@ -426,7 +430,7 @@ class BaseUploader(Propertized):
         if r.status_code > 299:
             response_content = r.content
             try:
-                response_content = pprint(r.json())
+                response_content = pformat(r.json())
             except:
                 pass
             msg = '''\
@@ -434,7 +438,7 @@ Status code was: %s
 Response body was:
 
 %s
-''' % (r.status_code, r.content)
+''' % (r.status_code, response_content)
             raise UserError("Problem uploading to the COS API %s " % self.file_details.relative_path, msg)
         self.process_post_upload()
         return self.object_id
@@ -475,6 +479,28 @@ Response body was:
             return self.file_details.metadata.get('id')
         else:
             return None
+
+    _fix_img_src = re.compile(r'(src=[\'"])(?P<link>[^\"\']+)([\'"])')        
+    _fix_link_href_re = re.compile(r'(<link[^>]+href=["\'])(?P<link>[^\"\']+)([\'"][^>]*>)')
+    _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\));')
+    _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\);)')
+    def _convert_asset_urls(self, html):
+        def replacer(match):
+            link = match.group('link')
+            if link.startswith('//') or '://' in link:
+                return match.group(0)
+            if link.startswith('../files/'):
+                link = link[9:]
+            if link.startswith('./'):
+                link = link[2:]
+            link = 'http://cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
+            return match.expand('\g<1>%s\g<3>' % link)
+
+        html = self._fix_img_src.sub(replacer, html)
+        html = self._fix_link_href_re.sub(replacer, html)
+        html = self._fix_url_re.sub(replacer, html)
+        return html
+
 
 class TemplateUploader(BaseUploader):
     endpoint = 'templates'
@@ -523,7 +549,7 @@ If 'creatable' is true, then the template must have valid source content for tha
             raise UserError("Template is not valid %s " % self.file_details.full_local_path, msg)
 
     def hydrate_json_data(self, data):
-        data['source'] = self.file_details.content
+        data['source'] = self._convert_asset_urls(self.file_details.content)
         category = data.get('category')
         if category in ("blog", 'blog_post'):
             data['category_id'] = 3
@@ -559,6 +585,7 @@ If 'creatable' is true, then the template must have valid source content for tha
             if data['path'].count('/') == 1:
                 data['path'] = 'custom/' + data.get('category', 'page') + 's' + '/' + data['path']
                 
+
 
         
 class StyleUploader(TemplateUploader):
@@ -628,9 +655,6 @@ class PageUploader(BaseUploader):
             return None
         else:
             return result.get('objects')[0]['id']
-
-    _fix_img_src = re.compile(r'src="([^\"]+)"')
-    _fix_anchor_re = re.compile(r'<a\s+name="([^\"]+)"[^>]*>')
     def hydrate_json_data(self, data):
         if 'slug' not in data:
             data['slug'] = os.path.splitext(self.file_details.relative_path)[0]
@@ -691,18 +715,13 @@ class PageUploader(BaseUploader):
                 container = None
             elif attribute_lines != None:
                 attribute_lines.append(line)
-        
-            
 
+
+    _fix_anchor_re = re.compile(r'<a\s+name="([^\"]+)"[^>]*>')
     def _clean_html(self, html):
+        html = self._convert_asset_urls(html)
         html = html.replace('{{', '&#123;&#123;')
         html = self._fix_anchor_re.sub(r'<a name="\g<1>"></a>', html)
-        def replacer(match):
-            link = match.group(1)
-            if not '//' in link and not link.startswith('/'):
-                link = 'http://cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
-            return 'src="%s"' % link
-        html = self._fix_img_src.sub(replacer, html)
         return html
 
 

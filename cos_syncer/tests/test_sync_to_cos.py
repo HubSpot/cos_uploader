@@ -5,10 +5,10 @@ import time
 
 from unittest import TestCase
 
-from mockery.mocking import MockeryMixin, ok_
+from mockery.mocking import MockeryMixin, ok_, eq_
 
 from .. import sync_to_cos
-from ..sync_to_cos import Options
+from ..sync_to_cos import Options, TemplateUploader
 
 basic_target = os.path.dirname(__file__) + '/basic_target'
 basic_sync_history_path = basic_target + "/.sync-history.json"
@@ -72,6 +72,57 @@ class TestBasic(TestCase, MockeryMixin):
         t.join()
         ok_(found_change, 'Did not find newfile.css in the history!')
             
+    def test_convert_asset_urls(self):
+        uploader = TemplateUploader(options=Options(hub_id=103))
+        
+        for case in cases:
+            out = uploader._convert_asset_urls(case['org'])
+            eq_(case['exp'], out)
+
+cases = [
+    dict(
+        org='''{ background-image: url(../files/asset/img/icon.png);}''',
+        exp='''{ background-image: url(http://cdn2.hubspot.net/hub/103/asset/img/icon.png);}'''
+        ),
+    dict(
+        org='''{ background-image: url("../files/asset/img/icon.png");}''',
+        exp='''{ background-image: url("http://cdn2.hubspot.net/hub/103/asset/img/icon.png");}'''
+        ),
+    dict(
+        org='''a<link href="../files/styles/css/blog.css" />b''',
+        exp='''a<link href="http://cdn2.hubspot.net/hub/103/styles/css/blog.css" />b'''
+        ),
+    dict(
+        org='''a<link rel="stylesheet" href="./asset/css/blog.css" />b''',
+        exp='''a<link rel="stylesheet" href="http://cdn2.hubspot.net/hub/103/asset/css/blog.css" />b'''
+        ),
+    dict(
+        org='''a<link rel="stylesheet" href='./asset/css/blog.css' />b''',
+        exp='''a<link rel="stylesheet" href='http://cdn2.hubspot.net/hub/103/asset/css/blog.css' />b'''
+        ),
+    dict(
+        org='''a<link href="asset/css/blog.css" rel="stylesheet" />b''',
+        exp='''a<link href="http://cdn2.hubspot.net/hub/103/asset/css/blog.css" rel="stylesheet" />b'''
+        ),
+    dict(
+        org='''a<img src="../files/asset/img/icon.png" />b''',
+        exp='''a<img src="http://cdn2.hubspot.net/hub/103/asset/img/icon.png" />b'''
+        ),
+    dict(
+        org='''a<img src='../files/asset/img/icon.png' />b''',
+        exp='''a<img src='http://cdn2.hubspot.net/hub/103/asset/img/icon.png' />b'''
+        ),
+    dict(
+        org='''a<img src='http://flickr.com/files/asset/img/icon.png' />b''',
+        exp='''a<img src='http://flickr.com/files/asset/img/icon.png' />b'''
+        ),
+    dict(
+        org='''a<img src='//flickr.com/files/asset/img/icon.png' />b''',
+        exp='''a<img src='//flickr.com/files/asset/img/icon.png' />b'''
+        ),
+
+    
+]
         
 
 class AsyncMain(Thread):

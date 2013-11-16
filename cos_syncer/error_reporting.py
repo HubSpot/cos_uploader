@@ -30,6 +30,21 @@ def report_exception():
         )
 
 
+def _get_environment_info():
+    return {
+        'os': os.name,
+        'sys.platform': sys.platform,
+        
+
+
+        'user': os.environ.get('USERNAME') or os.environ.get('USER'),
+        'curdir': os.getcwd(),
+        'args': sys.argv,
+        'version': sys.version,
+        
+        
+        }
+
         
 class CustomTransport(HTTPTransport):
     scheme = 'custom+https'
