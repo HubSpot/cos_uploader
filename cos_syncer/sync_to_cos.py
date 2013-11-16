@@ -482,7 +482,6 @@ Response body was:
 
     _fix_img_src = re.compile(r'(src=[\'"])(?P<link>[^\"\']+)([\'"])')        
     _fix_link_href_re = re.compile(r'(<link[^>]+href=["\'])(?P<link>[^\"\']+)([\'"][^>]*>)')
-    _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\));')
     _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\);)')
     def _convert_asset_urls(self, html):
         def replacer(match):
