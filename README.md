@@ -25,7 +25,7 @@ cd /path/to/your/asset/folder
 * Run the following commands to download the binary and make it executable:
 
 ```
-curl -L -o sync_to_cos "https://github.com/HubSpot/cos_syncer/releases/download/v0.12-alpha/sync_to_cos_osx";
+curl -L -o sync_to_cos "https://github.com/HubSpot/cos_syncer/releases/download/v0.12-alpha/sync_to_cos";
 chmod 700 sync_to_cos;
 ```
 
