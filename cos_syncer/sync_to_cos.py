@@ -19,12 +19,14 @@ import traceback
 
 from error_reporting import report_exception
 
-if sys.argv[0].endswith('.py'):
-    logging.basicConfig(level=logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("_")
 
+
+if sys.argv[0].endswith('.py'):
+    logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+else:
+    logging.basicConfig(format='%(message)s', level=logging.INFO)
+logger = logging.getLogger("_")
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 try:
     from watchdog.observers import Observer
@@ -258,7 +260,7 @@ class Syncer(object):
             options=self.options,
             object_id=self._get_object_id(file_details),
             )
-        logger.info("Syncing file %s %s" % (file_details.cos_type, file_details.relative_path))
+        logger.info("Syncing '%s/%s'" % (file_details.cos_type, file_details.relative_path))
         try:
             object_id = uploader.upload()
         except UserError as e:
@@ -415,18 +417,18 @@ class BaseUploader(Propertized):
         self.check_valid(data)
         if not object_id:
             url = self.get_create_url()
-            logger.info('POST new data to %s' % url)
+            logger.debug('POST new data to %s' % url)
             r = requests.post(url, data=json.dumps(data), verify=False)
             self.object_id = r.json().get('id', None)
             if r.status_code < 300:
-                logger.info('Create succeeded for file %s The ID is %s' % (self.file_details.relative_path, self.object_id))
+                logger.info('Creation successful for file %s; the new file ID is %s' % (self.file_details.relative_path, self.object_id))
         else:
             url = self.get_put_url(object_id)
-            logger.info('PUT new data to %s' % url)
+            logger.debug('PUT new data to %s' % url)
             r = requests.put(url, data=json.dumps(data), verify=False)
             self.object_id = object_id
             if r.status_code < 300:
-                logger.info('Update succeeded for file %s' % self.file_details.relative_path)
+                logger.info('Update successful for file %s' % self.file_details.relative_path)
         if r.status_code > 299:
             response_content = r.content
             try:
@@ -483,7 +485,7 @@ Response body was:
     _fix_src = re.compile(r'(<\w+[^>]+src=[\'"])(?P<link>[^\"\']+)([\'"])')        
     _fix_link_href_re = re.compile(r'(<link[^>]+href=["\'])(?P<link>[^\"\']+)([\'"][^>]*>)')
     _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\);)')
-    def _convert_asset_urls(self, html):
+    def _convert_asset_urls(self, html, include_scheme=False):
         def replacer(match):
             link = match.group('link')
             if link.startswith('//') or '://' in link:
@@ -494,7 +496,9 @@ Response body was:
                 link = link[2:]
             if link.startswith('/'):
                 link = link[1:]
-            link = 'http://cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
+            link = '//cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
+            if include_scheme:
+                link = 'https' + link
             return match.expand('\g<1>%s\g<3>' % link)
 
         html = self._fix_src.sub(replacer, html)  
@@ -550,7 +554,7 @@ If 'creatable' is true, then the template must have valid source content for tha
             raise UserError("Template is not valid %s " % self.file_details.full_local_path, msg)
 
     def hydrate_json_data(self, data):
-        data['source'] = self._convert_asset_urls(self.file_details.content)
+
         category = data.get('category')
         if category in ("blog", 'blog_post'):
             data['category_id'] = 3
@@ -594,7 +598,7 @@ If 'creatable' is true, then the template must have valid source content for tha
             if data['path'].count('/') == 1:
                 data['path'] = 'custom/' + data.get('category', 'page') + 's' + '/' + data['path']
                 
-
+        data['source'] = self._convert_asset_urls(self.file_details.content, include_scheme=data.get('category_id')==2)
 
         
 class StyleUploader(TemplateUploader):
@@ -615,22 +619,26 @@ class FileUploader(BaseUploader):
             "folder_paths": folder,
             "overwrite": "true"
          }
-        logger.info("FILE DATA %s " % data)
+        logger.debug("FILE DATA %s " % data)
         object_id = self.get_id_from_details()
         if not object_id:
             object_id = self.lookup_id(data)
 
         if not object_id:
             url = self.get_create_url()
-            logger.info('POST URL IS %s' % url)
+            logger.debug('POST URL IS %s' % url)
             r = requests.post(url, data=data, files=files, verify=False)
-            logger.info("RESULT %s " % r)
+            logger.debug("RESULT %s " % r)
+            if r.status_code < 300:
+                logger.info("Creation successful for file %s " % file_name)
             return r.json()['objects'][0]['id']
         else:
             url = self.get_put_url(object_id)
-            logger.info('POST URL IS %s' % url)
+            logger.debug('POST URL IS %s' % url)
             r = requests.post(url, data=data, files=files, verify=False)
-            logger.info('RESULT %s' % r)
+            if r.status_code < 300:
+                logger.info("Update successful for file %s " % file_name)
+            logger.debug('RESULT %s' % r)
             return object_id
             
 
@@ -714,7 +722,7 @@ class PageUploader(BaseUploader):
                 if is_markdown:
                     attr_html = markdown.markdown(attr_html, ['fenced_code', 'toc']) 
                     attr_html = attr_html.replace('&amp;lbrace;', '&#123;')
-                attr_html = self._convert_asset_urls(attr_html)
+                attr_html = self._convert_asset_urls(attr_html, data.get('category_id') == 2)
                 widget['body'][current_attribute_name] = attr_html
                 attribute_lines = None
                 current_attribute_name = None
