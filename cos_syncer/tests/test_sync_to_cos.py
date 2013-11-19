@@ -109,6 +109,10 @@ cases = [
         exp='''a<img src="http://cdn2.hubspot.net/hub/103/asset/img/icon.png" />b'''
         ),
     dict(
+        org='''a<script src="../files/asset/img/icon.js" />b''',
+        exp='''a<script src="http://cdn2.hubspot.net/hub/103/asset/img/icon.js" />b'''
+        ),
+    dict(
         org='''a<img src='../files/asset/img/icon.png' />b''',
         exp='''a<img src='http://cdn2.hubspot.net/hub/103/asset/img/icon.png' />b'''
         ),

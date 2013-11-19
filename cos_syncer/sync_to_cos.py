@@ -127,7 +127,7 @@ def sync_folder(options):
     syncer = Syncer(options)
     for file_details in file_details:
         syncer.sync_if_changed(file_details)
-    logger.info("Latest changes have beens synced")
+    logger.info("Latest changes have been synced")
  
 _force_quit = False
 def watch_folder(options):
@@ -136,7 +136,7 @@ def watch_folder(options):
     observer = Observer()
     observer.schedule(event_handler, path=options.target_folder, recursive=True)
     observer.start()
-    logger.info("Watching the target directory for changes")
+    logger.info("Watching the target directory for changes. Type CTRL-C to quit.")
     try:
         while True:
             if _force_quit:
@@ -480,7 +480,7 @@ Response body was:
         else:
             return None
 
-    _fix_img_src = re.compile(r'(src=[\'"])(?P<link>[^\"\']+)([\'"])')        
+    _fix_src = re.compile(r'(<\w+[^>]+src=[\'"])(?P<link>[^\"\']+)([\'"])')        
     _fix_link_href_re = re.compile(r'(<link[^>]+href=["\'])(?P<link>[^\"\']+)([\'"][^>]*>)')
     _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\);)')
     def _convert_asset_urls(self, html):
@@ -495,7 +495,7 @@ Response body was:
             link = 'http://cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
             return match.expand('\g<1>%s\g<3>' % link)
 
-        html = self._fix_img_src.sub(replacer, html)
+        html = self._fix_src.sub(replacer, html) 
         html = self._fix_link_href_re.sub(replacer, html)
         html = self._fix_url_re.sub(replacer, html)
         return html
@@ -576,7 +576,15 @@ If 'creatable' is true, then the template must have valid source content for tha
             
 
         if 'creatable' in data:
-            data['is_available_for_new_content'] = data['creatable']
+            data['is_available_for_new_content'] = str(data['creatable']).lower() == 'true'
+
+        if 'is_available_for_new_content' in data:
+            data['is_available_for_new_content'] = str(data['is_available_for_new_content']).lower() == 'true'
+        if 'category_id' in data:
+            data['category_id'] = int(data['category_id'])
+        if 'template_type' in data:
+            data['template_type'] = int(data['template_type'])
+
 
         if data.get('path'):
             if data['path'].count('/') == 2:
@@ -704,6 +712,7 @@ class PageUploader(BaseUploader):
                 if is_markdown:
                     attr_html = markdown.markdown(attr_html, ['fenced_code', 'toc']) 
                     attr_html = attr_html.replace('&amp;lbrace;', '&#123;')
+                attr_html = self._convert_asset_urls(attr_html)
                 widget['body'][current_attribute_name] = attr_html
                 attribute_lines = None
                 current_attribute_name = None
@@ -716,12 +725,6 @@ class PageUploader(BaseUploader):
                 attribute_lines.append(line)
 
 
-    _fix_anchor_re = re.compile(r'<a\s+name="([^\"]+)"[^>]*>')
-    def _clean_html(self, html):
-        html = self._convert_asset_urls(html)
-        html = html.replace('{{', '&#123;&#123;')
-        html = self._fix_anchor_re.sub(r'<a name="\g<1>"></a>', html)
-        return html
 
 
 class SiteMapUploader(BaseUploader):
