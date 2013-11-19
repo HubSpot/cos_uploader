@@ -89,6 +89,10 @@ cases = [
         exp='''{ background-image: url("http://cdn2.hubspot.net/hub/103/asset/img/icon.png");}'''
         ),
     dict(
+        org='''<video width="7"> <source src="/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>''',
+        exp='''<video width="7"> <source src="http://cdn2.hubspot.net/hub/103/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>'''
+        ),
+    dict(
         org='''a<link href="../files/styles/css/blog.css" />b''',
         exp='''a<link href="http://cdn2.hubspot.net/hub/103/styles/css/blog.css" />b'''
         ),

@@ -492,10 +492,12 @@ Response body was:
                 link = link[9:]
             if link.startswith('./'):
                 link = link[2:]
+            if link.startswith('/'):
+                link = link[1:]
             link = 'http://cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
             return match.expand('\g<1>%s\g<3>' % link)
 
-        html = self._fix_src.sub(replacer, html) 
+        html = self._fix_src.sub(replacer, html)  
         html = self._fix_link_href_re.sub(replacer, html)
         html = self._fix_url_re.sub(replacer, html)
         return html
