@@ -82,43 +82,43 @@ class TestBasic(TestCase, MockeryMixin):
 cases = [
     dict(
         org='''{ background-image: url(../files/asset/img/icon.png);}''',
-        exp='''{ background-image: url(http://cdn2.hubspot.net/hub/103/asset/img/icon.png);}'''
+        exp='''{ background-image: url(//cdn2.hubspot.net/hub/103/asset/img/icon.png);}'''
         ),
     dict(
         org='''{ background-image: url("../files/asset/img/icon.png");}''',
-        exp='''{ background-image: url("http://cdn2.hubspot.net/hub/103/asset/img/icon.png");}'''
+        exp='''{ background-image: url("//cdn2.hubspot.net/hub/103/asset/img/icon.png");}'''
         ),
     dict(
         org='''<video width="7"> <source src="/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>''',
-        exp='''<video width="7"> <source src="http://cdn2.hubspot.net/hub/103/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>'''
+        exp='''<video width="7"> <source src="//cdn2.hubspot.net/hub/103/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>'''
         ),
     dict(
         org='''a<link href="../files/styles/css/blog.css" />b''',
-        exp='''a<link href="http://cdn2.hubspot.net/hub/103/styles/css/blog.css" />b'''
+        exp='''a<link href="//cdn2.hubspot.net/hub/103/styles/css/blog.css" />b'''
         ),
     dict(
         org='''a<link rel="stylesheet" href="./asset/css/blog.css" />b''',
-        exp='''a<link rel="stylesheet" href="http://cdn2.hubspot.net/hub/103/asset/css/blog.css" />b'''
+        exp='''a<link rel="stylesheet" href="//cdn2.hubspot.net/hub/103/asset/css/blog.css" />b'''
         ),
     dict(
         org='''a<link rel="stylesheet" href='./asset/css/blog.css' />b''',
-        exp='''a<link rel="stylesheet" href='http://cdn2.hubspot.net/hub/103/asset/css/blog.css' />b'''
+        exp='''a<link rel="stylesheet" href='//cdn2.hubspot.net/hub/103/asset/css/blog.css' />b'''
         ),
     dict(
         org='''a<link href="asset/css/blog.css" rel="stylesheet" />b''',
-        exp='''a<link href="http://cdn2.hubspot.net/hub/103/asset/css/blog.css" rel="stylesheet" />b'''
+        exp='''a<link href="//cdn2.hubspot.net/hub/103/asset/css/blog.css" rel="stylesheet" />b'''
         ),
     dict(
         org='''a<img src="../files/asset/img/icon.png" />b''',
-        exp='''a<img src="http://cdn2.hubspot.net/hub/103/asset/img/icon.png" />b'''
+        exp='''a<img src="//cdn2.hubspot.net/hub/103/asset/img/icon.png" />b'''
         ),
     dict(
         org='''a<script src="../files/asset/img/icon.js" />b''',
-        exp='''a<script src="http://cdn2.hubspot.net/hub/103/asset/img/icon.js" />b'''
+        exp='''a<script src="//cdn2.hubspot.net/hub/103/asset/img/icon.js" />b'''
         ),
     dict(
         org='''a<img src='../files/asset/img/icon.png' />b''',
-        exp='''a<img src='http://cdn2.hubspot.net/hub/103/asset/img/icon.png' />b'''
+        exp='''a<img src='//cdn2.hubspot.net/hub/103/asset/img/icon.png' />b'''
         ),
     dict(
         org='''a<img src='http://flickr.com/files/asset/img/icon.png' />b''',

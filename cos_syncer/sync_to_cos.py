@@ -523,7 +523,9 @@ class TemplateUploader(BaseUploader):
 
     def check_valid(self, data):
         msg = ''
-        if not data.get('path') or data.get('category_id') == None or data.get('template_type') == None or data.get('is_available_for_new_content') == None:
+        is_asset = os.path.splitext(self.file_details.relative_path)[1] in ('.js', '.css')
+        is_blog = data.get('category_id') == 3
+        if not data.get('path') or data.get('category_id') == None or data.get('template_type') == None or (data.get('is_available_for_new_content') == None and not is_asset and not is_blog):
             msg = """\
 Your template file must include a JSON metadata section.  The metadata tells us what type of content the template is associated with, whether
 
@@ -580,6 +582,12 @@ If 'creatable' is true, then the template must have valid source content for tha
         if data.get('category_id') == 0:
             data['is_available_for_new_content'] = False
             
+
+        if self.file_details.relative_path.endswith('.css'):
+            if not data.get('category_id'):
+                data['category_id'] = 0
+                data['template_type'] = 0
+
 
         if 'creatable' in data:
             data['is_available_for_new_content'] = str(data['creatable']).lower() == 'true'
