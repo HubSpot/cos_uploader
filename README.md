@@ -47,7 +47,7 @@ To get all the options, run with the help flag:
 
 Download the syncer executable from here:
 
-https://github.com/HubSpot/cos_uploader/releases/download/v0.11-alpha/upload_to_cos.exe
+http://designers.hubspot.com/cos-uploader/windows-latest/upload_to_cos.exe
 
 Drag the downloaded file into the folder with your assets.  Double click the file to run it, give it permission when the security dialog pops up, then follow the instructions.
 
