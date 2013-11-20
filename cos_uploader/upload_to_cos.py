@@ -44,7 +44,6 @@ def main(options=None):
         do_main(options)
     except Exception:
         if not options.dont_report_errors:
-            print 'CALL REPORT'
             report_exception()
         raise
 
@@ -58,10 +57,10 @@ def do_main(options):
         logger.fatal("The target folder (%s) does not exist" % options.target_folder)
         sys.exit(1)
     if not os.path.isdir(options.target_folder + "/files") and not os.path.isdir(options.target_folder + "/templates. Exiting."):
-        logger.fatal("You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to sync.  Exiting." % options.target_folder)
+        logger.fatal("You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to upload.  Exiting." % options.target_folder)
         sys.exit(1)
         
-    if options.action == 'sync':
+    if options.action == 'upload':
         sync_folder(options)
     elif options.action == 'watch':
         watch_folder(options)
@@ -74,7 +73,7 @@ def do_main(options):
             time.sleep(7)
 
 def handle_interactive_mode(options):
-    target_folder = raw_input("What folder do you want to sync? (Leave blank to use current folder \"%s\"): " % options.target_folder)
+    target_folder = raw_input("What folder do you want to upload? (Leave blank to use current folder \"%s\"): " % options.target_folder)
     if target_folder.strip():
         options.target_folder = target_folder.strip()
     if not os.path.isdir(options.target_folder):
@@ -111,7 +110,7 @@ def handle_interactive_mode(options):
             yaml.dump(config, f)
             f.close()
 
-    logger.info("Syncing then watching folder " + options.target_folder)
+    logger.info("Uploading, then watching folder " + options.target_folder)
 
 def _obfuscate_key(api_key):
     parts = api_key.split('-')
@@ -296,12 +295,12 @@ if default_folder == os.environ.get('HOME'):
     default_folder = os.path.dirname(sys.argv[0])
 
 class Options(ScriptOptions):
-    action = Opt(choices=['watch', 'sync'], help="The action. Choose 'sync' for a one time sync.  Chose 'watch' to sync and then continue to watch the directories for changes and sync all changes")
-    target_folder = Opt(default=default_folder, help='The folder you want to sync.')
+    action = Opt(choices=['watch', 'upload'], help="The action. Choose 'upload' for a one time sync.  Chose 'watch' to upload and then continue to watch the directories for changes and upload all changes")
+    target_folder = Opt(default=default_folder, help='The folder you want to upload.')
     hub_id = Opt(help='The hub_id or portal_id for your HubSpot account')
     api_key = Opt(help='The api key.  Get your key from https://app.hubspot.com/keys/get Only professional and enterprise portals can get a key')
     dont_report_errors = Opt(action='store_true', help="By default, we send all errors to an error reporting service so that HubSpot engineers can fix bugs.  Include this option to disable error reporting")
-    use_buffer = Opt(action='store_true', help='If set, the syncer will update the auto-save buffer rather than updating the live content')
+    use_buffer = Opt(action='store_true', help='If set, the uploader will update the auto-save buffer rather than updating the live content')
 
 class FileDetails(Propertized):
     last_modified_at = Prop(0)

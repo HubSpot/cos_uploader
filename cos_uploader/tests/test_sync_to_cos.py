@@ -7,8 +7,8 @@ from unittest import TestCase
 
 from mockery.mocking import MockeryMixin, ok_, eq_
 
-from .. import sync_to_cos
-from ..sync_to_cos import Options, TemplateUploader
+from .. import upload_to_cos
+from ..upload_to_cos import Options, TemplateUploader
 
 basic_target = os.path.dirname(__file__) + '/basic_target'
 basic_sync_history_path = basic_target + "/.sync-history.json"
@@ -25,7 +25,7 @@ class TestBasic(TestCase, MockeryMixin):
 
     def test_sync(self):
         options = Options(action='sync', hub_id=105, api_key='noop', target_folder=basic_target)
-        sync_to_cos.main(options)
+        upload_to_cos.main(options)
 
     def _clean_history(self):
         if os.path.isfile(basic_sync_history_path):
@@ -43,9 +43,9 @@ class TestBasic(TestCase, MockeryMixin):
             else:
                 return MockResult(data={'id': 100})
             
-        self.stub(sync_to_cos.requests, 'get', mock_get)
-        self.stub(sync_to_cos.requests, 'put', mock_put)
-        self.stub(sync_to_cos.requests, 'post', mock_post)
+        self.stub(upload_to_cos.requests, 'get', mock_get)
+        self.stub(upload_to_cos.requests, 'put', mock_put)
+        self.stub(upload_to_cos.requests, 'post', mock_post)
 
     def test_watch(self):
         new_path = basic_target + '/files/newfile.css'
@@ -68,7 +68,7 @@ class TestBasic(TestCase, MockeryMixin):
                 found_change = True
                 break
             f.close()
-        sync_to_cos._force_quit = True
+        upload_to_cos._force_quit = True
         t.join()
         ok_(found_change, 'Did not find newfile.css in the history!')
             
@@ -139,7 +139,7 @@ class AsyncMain(Thread):
         self.options = options
 
     def run(self):
-        sync_to_cos.main(self.options)
+        upload_to_cos.main(self.options)
 
 class MockResult(object):
     def __init__(self, content='', data=None, status_code=200):

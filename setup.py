@@ -2,16 +2,16 @@
 from setuptools import setup
 
 setup(
-    name='cos_syncer',
+    name='cos_uploader',
     version='1.0.0',
     description="A script that syncs a local file system to the COS",
     long_description=open('README.md').read(),
     author='HubSpot Dev Team',
     author_email='devteam+hapi@hubspot.com',
-    url='https://github.com/HubSpot/cos_syncer',
-    download_url='https://github.com/HubSpot/cos_syncer/tarball/v1.0.0',
+    url='https://github.com/HubSpot/cos_uploader',
+    download_url='https://github.com/HubSpot/cos_uploader/tarball/v1.0.0',
     license='LICENSE.txt',
-    packages=['cos_syncer'],
+    packages=['cos_uploader'],
     install_requires=[
         'nose>=1.1.0',
         'unittest2>=0.5.0',

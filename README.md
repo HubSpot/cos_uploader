@@ -1,7 +1,7 @@
 ALPHA not ready for real use
 =================================
 
-The cos_syncer will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
+The cos_uploader will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
 
 Required before you start
 ----------------------------------
@@ -25,21 +25,21 @@ cd /path/to/your/asset/folder
 * Run the following commands to download the binary and make it executable:
 
 ```
-curl -L -o sync_to_cos "https://github.com/HubSpot/cos_syncer/releases/download/v0.13-alpha/sync_to_cos"
+curl -L -o upload_to_cos "https://github.com/HubSpot/cos_uploader/releases/download/v0.14-alpha/upload_to_cos"
 
-chmod 700 sync_to_cos
+chmod 700 upload_to_cos
 ```
 
 * Now you can run the sync watcher:
 
 ```
-./sync_to_cos
+./upload_to_cos
 ```
 
 To get all the options, run with the help flag:
 
 ```
-./sync_to_cos -h
+./upload_to_cos -h
 ```                
 
 
@@ -47,7 +47,7 @@ To get all the options, run with the help flag:
 
 Download the syncer executable from here:
 
-https://github.com/HubSpot/cos_syncer/releases/download/v0.11-alpha/sync_to_cos.exe
+https://github.com/HubSpot/cos_uploader/releases/download/v0.11-alpha/upload_to_cos.exe
 
 Drag the downloaded file into the folder with your assets.  Double click the file to run it, give it permission when the security dialog pops up, then follow the instructions.
 

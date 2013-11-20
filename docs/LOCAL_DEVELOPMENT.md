@@ -1,7 +1,7 @@
 Running the sync from a locally modifiable version
 -----------------------------------
 
-These instructions allow you to get the source of the syncer, and run it locally from the source code version, so you can make changes and use the program from your changed version.
+These instructions allow you to get the source of the uploader, and run it locally from the source code version, so you can make changes and use the program from your changed version.
 
 You will need:
 * python 2.7.x Python is installed by default on Max OSX and Linux machines.  The [Windows installer is here](http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi).
@@ -14,27 +14,27 @@ With all the above installed, you can do the following to install and work with 
 
 ```bash
 # Clone the git repo to get the code
-git clone git@github.com:HubSpot/cos_syncer.git
+git clone git@github.com:HubSpot/cos_uploader.git
 # Go into the main code directory
-cd cos_syncer
+cd cos_uploader
 # Create a python virtualenv in order to hold dependencies
-mkvirtualenv cos_syncer
+mkvirtualenv cos_uploader
 # install dependencies
 pip install -r requirements.pip
 # create a wrapper script that will run from the command line anywhere
-echo "source $WORKON_HOME/cos_syncer/bin/activate;python "$(pwd)'/cos_syncer/sync_to_cos.py $*' > "/usr/local/bin/sync_to_cos"
+echo "source $WORKON_HOME/cos_uploader/bin/activate;python "$(pwd)'/cos_uploader/upload_to_cos.py $*' > "/usr/local/bin/upload_to_cos"
 # give the wrapper script execute privileges
-chmod 700 /usr/local/bin/sync_to_cos
+chmod 700 /usr/local/bin/upload_to_cos
 ```
 
 Now you should be able to go to the folder with your files in it from the command line.  Enter the following command, and the help will be printed out:
 ```
->sync_to_cos
+>upload_to_cos
 ``` 
 
-To use the sync script with your portal, go to https://app.hubspot.com/keys/get and get an API key for your portal.
+To use the upload script with your portal, go to https://app.hubspot.com/keys/get and get an API key for your portal.
 
 Then cd to the folder with your files and run:
-```>sync_to_cos --hub-id=(your hubid or portalid) --api-key=(your api key) -a sync```
+```>upload_to_cos --hub-id=(your hubid or portalid) --api-key=(your api key) -a upload```
 
 
