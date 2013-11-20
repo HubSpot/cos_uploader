@@ -25,7 +25,7 @@ cd /path/to/your/asset/folder
 * Run the following commands to download the binary and make it executable:
 
 ```
-curl -L -o upload_to_cos "https://github.com/HubSpot/cos_uploader/releases/download/v0.14-alpha/upload_to_cos"
+curl -L -o upload_to_cos "http://designers.hubspot.com/cos-uploader/osx-latest/upload_to_cos"
 
 chmod 700 upload_to_cos
 ```
