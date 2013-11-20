@@ -24,7 +24,7 @@ class TestBasic(TestCase, MockeryMixin):
         self._clean_history()
 
     def test_sync(self):
-        options = Options(action='sync', hub_id=105, api_key='noop', target_folder=basic_target)
+        options = Options(action='upload', hub_id=105, api_key='noop', target_folder=basic_target)
         upload_to_cos.main(options)
 
     def _clean_history(self):
@@ -32,7 +32,7 @@ class TestBasic(TestCase, MockeryMixin):
             os.unlink(basic_sync_history_path)
 
     def _setup_mocks(self):
-        options = Options(action='sync', hub_id=105, api_key='noop', target_folder=basic_target)
+        options = Options(action='upload', hub_id=105, api_key='noop', target_folder=basic_target)
         def mock_get(url, *args, **kwargs):
             return MockResult(data={})
         def mock_put(url, *args, **kwargs):
@@ -51,7 +51,7 @@ class TestBasic(TestCase, MockeryMixin):
         new_path = basic_target + '/files/newfile.css'
         if os.path.isfile(new_path):
             os.unlink(new_path)
-        options = Options(action='sync', hub_id=105, api_key='noop', target_folder=basic_target)
+        options = Options(action='upload', hub_id=105, api_key='noop', target_folder=basic_target)
         t = AsyncMain(options)
         t.start()
         f = open(new_path, 'w')
