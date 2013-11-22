@@ -16,7 +16,7 @@ import yaml
 import sys
 import time
 import traceback
-
+from uuid import uuid4
 from error_reporting import report_exception
 
 
@@ -48,8 +48,14 @@ def main(options=None):
         raise
 
 def do_main(options):
+    message = _get_startup_message()
+    if message:
+        print "-------------------------"
+        print message
+        print "-------------------------"
+        raw_input("Press ctrl-c to quit, or press any key to continue ...")
     is_interactive_mode = False
-    if not options.hub_id:
+    if not options.hub_id or (not options.api_key and not options.access_token):
         is_interactive_mode = True
         handle_interactive_mode(options)
     options.target_folder = options.target_folder.replace('\\', '/')
@@ -60,6 +66,8 @@ def do_main(options):
         logger.fatal("You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to upload.  Exiting." % options.target_folder)
         sys.exit(1)
         
+    if options.action:
+        _check_api_access_valid(options)
     if options.action == 'upload':
         sync_folder(options)
     elif options.action == 'watch':
@@ -86,23 +94,30 @@ def handle_interactive_mode(options):
         config = yaml.load(f) or {}
         f.close()
         options.hub_id = config.get('hub_id')
-        options.api_key = config.get('api_key')
+        #options.api_key = config.get('api_key')
+    original_config = deepcopy(config)
+
     id_msg = ''
     if options.hub_id:
         id_msg = " (leave blank for default of %s)" % options.hub_id
     options.hub_id = raw_input("Enter your portal_id/hubid%s: " % id_msg).strip() or options.hub_id
     if not str(options.hub_id).isdigit():
         fatal("That is not a valid hubid")
-    key_msg = "Get a key at https://app.hubspot.com/keys/get"
-    if options.api_key:
-        key_msg = 'Leave blank for default of "%s"' % _obfuscate_key(options.api_key)
-    options.api_key = raw_input("Enter your API key (%s): " % key_msg).strip() or options.api_key
-    if not options.api_key:
-        fatal("That is not a valid API key")
-    options.action = "watch"
+    config['hub_id'] = options.hub_id
 
-    if options.hub_id != config.get('hub_id') or options.api_key != config.get('api_key'):
-        remember = raw_input("Remember the hubid and api_key for next time? (Y/yes or no)?: " )
+    if not options.access_token and not options.api_key:
+        is_valid = _check_refresh_access_token(options.hub_id, config)
+        if not is_valid:
+            _prompt_fetch_token(options.hub_id, config)
+
+    options.action = "watch"
+    options.access_token = config.get('access_token', None)
+
+    if original_config != config:
+        if not 'api_key' in original_config and not 'access_token' in original_config:
+            remember = raw_input("Remember the hubid and access token for next time? (Y/yes or no)?: " )
+        else:
+            remember = 'y'
         if remember.lower() in ('y', 'yes'):
             config['hub_id'] = options.hub_id
             config['api_key'] = options.api_key
@@ -111,6 +126,71 @@ def handle_interactive_mode(options):
             f.close()
 
     logger.info("Uploading, then watching folder " + options.target_folder)
+
+def _check_refresh_access_token(portal_id, config):
+    if not config.get('access_token'):
+        return False
+    token = config.get('access_token')
+    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&access_token=%s' % (portal_id, token))
+    if r.status_code < 300:
+        return True
+    if not config.get('refresh_token'):
+        return False
+    r = requests.post(
+        'https://api.hubapi.com/hubauth/refresh',
+        data={
+            'refresh_token': config.get('refresh_token'),
+            'client_id': config.get('client_id', ''),
+            'grant_type': 'refresh_token'
+            },
+#        data=json.dumps({
+#            'refresh_token': config.get('refresh_token'),
+#            'client_id': config.get('client_id', ''),
+#            'grant_type': 'refresh_token'
+#            }),
+#        headers={'content-type': 'application/json'}
+        )
+    #POST with this payload: refresh_token=9f981bf9-52de-11e3-94d0-6555dd05843a&client_id=6c942e1b-52dc-11e3-94d0-6555dd05843a&grant_type=refresh_token
+    config['access_token'] = r.json()['access_token']
+    return True
+
+content_app_base_url = "https://api.hubapi.com/"
+api_base_url = "https://api.hubapi.com/"
+if os.environ.get('LOCAL_DEV'):
+    content_app_base_url = "http://prodlocal.hubspotqa.com:8080"
+    api_base_url = "http://prodlocal.hubspotqa.com:8080"
+                     
+
+def _prompt_fetch_token(portal_id, config):
+    secret = str(uuid4())
+    raw_input("Permissions needed. Press any key to open the authorization screen in your web browser. ")
+    url = content_app_base_url + "/content/%s/authorization/request?user_secret=%s" % (portal_id, secret)
+    if not os.name == "nt":
+        os.system("open \"%s\"" % url)
+    else:
+        os.startfile(url)
+    raw_input("Once you have granted permissions on the authorization screen, press any key to continue. ")
+    result = requests.get(api_base_url + '/content/api/v2/cos-uploader/secret-to-token?user_secret=%s&portalId=%s' % (secret, portal_id))
+    result_data = result.json()
+    if not result_data.get('access_token'):
+        fatal("There was a fatal error trying to retrieve the access token")
+    config['secret'] = secret
+    config.update(result_data)
+    
+def _check_api_access_valid(options):
+    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&%s' % (options.hub_id, _get_key_query(options)))
+    if r.status_code >= 300:
+        fatal("The API Key or Access token you are using is not valid. If you are using a presaved token, you may need to delete your .cos-sync-config.yaml file.")
+    return True
+    
+def _get_startup_message():
+    try:
+        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=1')
+        message = r.json().get('message', '')
+        return message
+    except:
+        return ''
+
 
 def _obfuscate_key(api_key):
     parts = api_key.split('-')
@@ -299,6 +379,7 @@ class Options(ScriptOptions):
     target_folder = Opt(default=default_folder, help='The folder you want to upload.')
     hub_id = Opt(help='The hub_id or portal_id for your HubSpot account')
     api_key = Opt(help='The api key.  Get your key from https://app.hubspot.com/keys/get Only professional and enterprise portals can get a key')
+    access_token = Opt(help='The OAuth access token. You can use this instead of an API Key.  Leave both api_key and access_token blank, and the cos_uploader will open your web browser to grant an access token.')
     dont_report_errors = Opt(action='store_true', help="By default, we send all errors to an error reporting service so that HubSpot engineers can fix bugs.  Include this option to disable error reporting")
     use_buffer = Opt(action='store_true', help='If set, the uploader will update the auto-save buffer rather than updating the live content')
 
@@ -465,13 +546,13 @@ Response body was:
 
 
     def get_create_url(self):
-        return 'https://api.hubapi.com/content/api/v2/%s?hapikey=%s&portalId=%s' % (self.endpoint, self.options.api_key, self.options.hub_id)
+        return 'https://api.hubapi.com/content/api/v2/%s?%s&portalId=%s' % (self.endpoint, _get_key_query(self.options), self.options.hub_id)
 
     def get_put_url(self, object_id):
         buffer = '/buffer'
         if not self.options.use_buffer:
             buffer = ''
-        return 'https://api.hubapi.com/content/api/v2/%s/%s%s?hapikey=%s&portalId=%s' % (self.endpoint, object_id, buffer, self.options.api_key, self.options.hub_id)
+        return 'https://api.hubapi.com/content/api/v2/%s/%s%s?%s&portalId=%s' % (self.endpoint, object_id, buffer, _get_key_query(self.options), self.options.hub_id)
 
     def get_id_from_details(self):
         if self.object_id:
@@ -505,6 +586,14 @@ Response body was:
         html = self._fix_url_re.sub(replacer, html)
         return html
 
+def _get_key_query(options):
+    if options.access_token:
+        return 'access_token=%s' % options.access_token
+    else:
+        return 'hapikey=%s' % options.api_key
+
+
+    
 
 class TemplateUploader(BaseUploader):
     endpoint = 'templates'
@@ -512,7 +601,7 @@ class TemplateUploader(BaseUploader):
     def lookup_id(self, data):
         if not 'path' in data:
             return
-        url = 'https://api.hubapi.com/content/api/v2/templates?path=%s&hapikey=%s&portalId=%s' % (data['path'], self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/templates?path=%s&%s&portalId=%s' % (data['path'], _get_key_query(self.options), self.options.hub_id)
         r = requests.get(url, verify=False)
         result = r.json()
         if not result.get('objects', []):
@@ -652,7 +741,7 @@ class FileUploader(BaseUploader):
 
     def lookup_id(self, data):
         alt_key = 'hub/%s/%s' % (self.options.hub_id, os.path.splitext(self.file_details.relative_path)[0])
-        url = 'https://api.hubapi.com/content/api/v2/files?alt_key=%s&hapikey=%s&portalId=%s' % (alt_key, self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/files?alt_key=%s&%s&portalId=%s' % (alt_key, _get_key_query(self.options), self.options.hub_id)
         r = requests.get(url, verify=False)
         result = r.json()
         if not result.get('objects', []):
@@ -672,7 +761,7 @@ class PageUploader(BaseUploader):
     endpoint = 'pages'
 
     def lookup_id(self, data):
-        url = 'https://api.hubapi.com/content/api/v2/pages?slug=%s&hapikey=%s&portalId=%s' % (data['slug'], self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/pages?slug=%s&%s&portalId=%s' % (data['slug'], _get_key_query(self.options), self.options.hub_id)
         r = requests.get(url, verify=False)
         result = r.json()
         if not result.get('objects', []):
@@ -749,7 +838,7 @@ class SiteMapUploader(BaseUploader):
 
     def lookup_id(self, data):
         name = os.path.splitext(self.file_details.relative_path)[0]
-        url = 'https://api.hubapi.com/content/api/v2/site-maps?name=%s&hapikey=%s&portalId=%s' % (name, self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/site-maps?name=%s&%s&portalId=%s' % (name, _get_key_query(self.options), self.options.hub_id)
         r = requests.get(
             url, verify=False
             )
@@ -782,7 +871,7 @@ class SiteMapUploader(BaseUploader):
                 build_dicts(child_node)
         build_dicts(tree)
         slugs_in = '&'.join(['slug__in=%s' % slug for slug in all_slugs])
-        url = 'https://api.hubapi.com/content/api/v2/pages?%s&hapikey=%s&portalId=%s&limit=500' % (slugs_in, self.options.api_key, self.options.hub_id)
+        url = 'https://api.hubapi.com/content/api/v2/pages?%s&%s&portalId=%s&limit=500' % (slugs_in, _get_key_query(self.options), self.options.hub_id)
         r = requests.get(url, verify=False)
         for page in r.json().get('objects', []):
             slug_to_node[page['slug']]['page_id'] = page['id']
