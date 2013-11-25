@@ -131,7 +131,7 @@ def _check_refresh_access_token(portal_id, config):
     if not config.get('access_token'):
         return False
     token = config.get('access_token')
-    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&access_token=%s' % (portal_id, token))
+    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&access_token=%s' % (portal_id, token), verify=False)
     if r.status_code < 300:
         return True
     if not config.get('refresh_token'):
@@ -143,14 +143,8 @@ def _check_refresh_access_token(portal_id, config):
             'client_id': config.get('client_id', ''),
             'grant_type': 'refresh_token'
             },
-#        data=json.dumps({
-#            'refresh_token': config.get('refresh_token'),
-#            'client_id': config.get('client_id', ''),
-#            'grant_type': 'refresh_token'
-#            }),
-#        headers={'content-type': 'application/json'}
+        verify=False
         )
-    #POST with this payload: refresh_token=9f981bf9-52de-11e3-94d0-6555dd05843a&client_id=6c942e1b-52dc-11e3-94d0-6555dd05843a&grant_type=refresh_token
     config['access_token'] = r.json()['access_token']
     return True
 
@@ -170,7 +164,7 @@ def _prompt_fetch_token(portal_id, config):
     else:
         os.startfile(url)
     raw_input("Once you have granted permissions on the authorization screen, press any key to continue. ")
-    result = requests.get(api_base_url + '/content/api/v2/cos-uploader/secret-to-token?user_secret=%s&portalId=%s' % (secret, portal_id))
+    result = requests.get(api_base_url + '/content/api/v2/cos-uploader/secret-to-token?user_secret=%s&portalId=%s' % (secret, portal_id), verify=False)
     result_data = result.json()
     if not result_data.get('access_token'):
         fatal("There was a fatal error trying to retrieve the access token")
@@ -178,7 +172,7 @@ def _prompt_fetch_token(portal_id, config):
     config.update(result_data)
     
 def _check_api_access_valid(options):
-    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&%s' % (options.hub_id, _get_key_query(options)))
+    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&%s' % (options.hub_id, _get_key_query(options)), verify=False)
     if r.status_code >= 300:
         fatal("The API Key or Access token you are using is not valid. If you are using a presaved token, you may need to delete your .cos-sync-config.yaml file.")
     return True
