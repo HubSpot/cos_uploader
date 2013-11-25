@@ -154,11 +154,11 @@ def _check_refresh_access_token(portal_id, config):
     config['access_token'] = r.json()['access_token']
     return True
 
-content_app_base_url = "https://api.hubapi.com/"
+content_app_base_url = "https://app.hubspot.com/"
 api_base_url = "https://api.hubapi.com/"
-if os.environ.get('LOCAL_DEV'):
-    content_app_base_url = "http://prodlocal.hubspotqa.com:8080"
-    api_base_url = "http://prodlocal.hubspotqa.com:8080"
+#if os.environ.get('LOCAL_DEV'):
+#    content_app_base_url = "http://prodlocal.hubspotqa.com:8080"
+#    api_base_url = "http://prodlocal.hubspotqa.com:8080"
                      
 
 def _prompt_fetch_token(portal_id, config):
@@ -185,7 +185,7 @@ def _check_api_access_valid(options):
     
 def _get_startup_message():
     try:
-        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=1')
+        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=327485')
         message = r.json().get('message', '')
         return message
     except:
