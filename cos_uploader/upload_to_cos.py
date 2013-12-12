@@ -42,10 +42,14 @@ def main(options=None):
     options = options or Options.from_argv()
     try:
         do_main(options)
+    except KeyboardInterrupt:
+        print "Ctrl-c pressed, quitting"
     except Exception:
         if not options.dont_report_errors:
             report_exception()
-        raise
+        traceback.print_exc()
+        print "Fatal error, quitting..."
+        time.sleep(13)
 
 def do_main(options):
     message = _get_startup_message()
@@ -75,10 +79,6 @@ def do_main(options):
     else:
         options.print_help()
 
-    if is_interactive_mode:
-        print "Quitting..."
-        if os.name == 'nt':
-            time.sleep(7)
 
 def handle_interactive_mode(options):
     target_folder = raw_input("What folder do you want to upload? (Leave blank to use current folder \"%s\"): " % options.target_folder)
