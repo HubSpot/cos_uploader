@@ -62,7 +62,7 @@ def do_main(options):
     if not os.path.isdir(options.target_folder):
         logger.fatal("The target folder (%s) does not exist" % options.target_folder)
         sys.exit(1)
-    if not os.path.isdir(options.target_folder + "/files") and not os.path.isdir(options.target_folder + "/templates. Exiting."):
+    if not os.path.isdir(options.target_folder + "/files") and not os.path.isdir(options.target_folder + "/templates"):
         logger.fatal("You have neither a 'files' folder or a 'templates' folder in the target folder (%s).  There is nothing to upload.  Exiting." % options.target_folder)
         sys.exit(1)
         
