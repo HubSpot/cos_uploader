@@ -26,7 +26,8 @@ def report_exception():
         headers={
             'content_type': "application/x-www-form-urlencoded"
             },
-        data={"email": str(uuid4()) + ".formreporting@hubspot.com", "json_blob": pformat(data)}
+        data={"email": str(uuid4()) + ".formreporting@hubspot.com", "json_blob": pformat(data)},
+        verify=False
         )
 
 

@@ -410,9 +410,8 @@ class FileDetails(Propertized):
     def _hydrate_content_and_metadata(self):
         if not self.is_text_file:
             return
-        f = codecs.open(self.full_local_path, 'r', 'utf-8')
-        self.content = f.read()
-        f.close()
+        self.content = _read_unicode_file_dammit(self.full_local_path)
+            
         m = self._json_comment_re.search(self.content)
         meta_json = ''
         if m:
@@ -444,9 +443,9 @@ class FileDetails(Propertized):
 
         new_json = json.dumps(data, indent=4)
         
-        f = codecs.open(self.full_local_path, 'r', 'utf-8')
-        org_content = f.read()
-        f.close()
+
+        org_content = _read_unicode_file_dammit(self.full_local_path)
+
         def replacer(m):
             parts = m.group(0).split('\n')
             return parts[0].strip() + '\n' + new_json + '\n' + parts[-1].strip()
@@ -458,6 +457,20 @@ class FileDetails(Propertized):
         f = codecs.open(self.full_local_path, 'w', 'utf-8')
         f.write(new_content)
         f.close()
+
+def _read_unicode_file_dammit(path):
+    try:
+        with codecs.open(path, 'r', 'utf-8') as f:
+            content = f.read()
+    except UnicodeDecodeError:
+        try:
+            with codecs.open(path, 'r', 'cp1250') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(path, 'rb') as f:
+                content = f.read()
+                content = unicode(content, 'utf-8', errors='ignore')
+    return content 
 
 def error(subject, msg):
     logger.error('''\n
