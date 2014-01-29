@@ -1,0 +1,1 @@
+pyinstaller --onefile upload_to_cos.py --hidden-import="markdown.extensions.headerid" --hidden-import=ordereddict --hidden-import="markdown.extensions.codehilite" --hidden-import="markdown.extensions.fenced_code" --hidden-import="markdown.extensions.toc" --paths=~/dev/virtualenvs/cos_uploader/lib/python2.7/site-packages
