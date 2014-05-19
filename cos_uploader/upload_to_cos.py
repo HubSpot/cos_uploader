@@ -638,7 +638,16 @@ This section can be put anywhere in the file.  It will be stripped from the file
 
 The "path" parameter controls where the template will show up in template builder.  This path can also be used in {% include %} statements by other templates.
 
-Allowed values for "category" are: email, blog, asset or include.  Set to 'page' if you want to be able to create a new landing page or site page with this template.  Set to 'asset' for css or javascript files.  Set to 'include' for any template that will be included by another template, as opposed to being used directly.
+Allowed values for "category" are:
+    - email
+    - blog
+    - blog_post
+    - blog_listing
+    - asset : css or javascript files
+    - include : templates that will be included by another template, as opposed to being used directly.
+    - page : if you want to be able to create a new landing page or site page with this template
+    - landing_page
+
 
 The "creatable" parameter should be set to 'true' when you want to show this template in the new page, blog post, or email creation screen.  
 
@@ -659,11 +668,11 @@ If 'creatable' is true, then the template must have valid source content for tha
         elif category == 'blog_listing':
             data['category_id'] = 3
             data['template_type'] = 7
-        elif category in ('page', 'landing_page'):
+        elif category in ('page', 'landing_page', 'asset'):
             data['category_id'] = 1
             data['template_type'] = 4
         elif category == 'error_page':
-            category = 0
+            data['category_id'] = 0
             data['template_type'] = 11
         elif category == 'email':
             data['category_id'] = 2
