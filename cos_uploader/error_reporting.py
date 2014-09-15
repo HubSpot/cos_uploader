@@ -7,7 +7,7 @@ from pprint import pformat
 from uuid import uuid4
 
 from raven import Client
-from raven.transport.base import HTTPTransport
+from raven.transport.http import HTTPTransport
 
 def report_exception(): 
     # We don't report if this is run from a test, run directly from the source

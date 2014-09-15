@@ -16,7 +16,7 @@ setup(
         'nose>=1.1.0',
         'unittest2>=0.5.0',
         'simplejson>=2.1.0',
-        'snakecharmer==1.0.0',
+        'snakecharmer>=1.0.0',
         'requests>=2.0.0',
         'watchdog>=0.1.2',
         'ordereddict>=1.0',
@@ -24,10 +24,10 @@ setup(
         'wsgiref>=0.1.2',
         'PyYAML>=3.10',
         'mockery',
-        'raven',
+        'raven==4.2.1',
     ],
     dependency_links=[
-        'http://github.com/HubSpot/snakecharmer/tarball/master#egg=snakecharmer-1.0.0',        
+        'http://github.com/HubSpot/snakecharmer/tarball/master#egg=snakecharmer-1.0.1',        
         'http://github.com/HubSpot/mockery/tarball/master#egg=mockery-1.0.0'
         ]
     ,
