@@ -71,67 +71,7 @@ class TestBasic(TestCase, MockeryMixin):
         upload_to_cos._force_quit = True
         t.join()
         ok_(found_change, 'Did not find newfile.css in the history!')
-            
-    def test_convert_asset_urls(self):
-        uploader = TemplateUploader(options=Options(hub_id=103))
-        
-        for case in cases:
-            out = uploader._convert_asset_urls(case['org'])
-            eq_(case['exp'], out)
 
-cases = [
-    dict(
-        org='''{ background-image: url(../files/asset/img/icon.png);}''',
-        exp='''{ background-image: url(//cdn2.hubspot.net/hub/103/asset/img/icon.png);}'''
-        ),
-    dict(
-        org='''{ background-image: url("../files/asset/img/icon.png");}''',
-        exp='''{ background-image: url("//cdn2.hubspot.net/hub/103/asset/img/icon.png");}'''
-        ),
-    dict(
-        org='''<video width="7"> <source src="/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>''',
-        exp='''<video width="7"> <source src="//cdn2.hubspot.net/hub/103/tutorial-from-local-html/slate-initial2.mp4" type="video/mp4"></video>'''
-        ),
-    dict(
-        org='''a<link href="../files/styles/css/blog.css" />b''',
-        exp='''a<link href="//cdn2.hubspot.net/hub/103/styles/css/blog.css" />b'''
-        ),
-    dict(
-        org='''a<link rel="stylesheet" href="./asset/css/blog.css" />b''',
-        exp='''a<link rel="stylesheet" href="//cdn2.hubspot.net/hub/103/asset/css/blog.css" />b'''
-        ),
-    dict(
-        org='''a<link rel="stylesheet" href='./asset/css/blog.css' />b''',
-        exp='''a<link rel="stylesheet" href='//cdn2.hubspot.net/hub/103/asset/css/blog.css' />b'''
-        ),
-    dict(
-        org='''a<link href="asset/css/blog.css" rel="stylesheet" />b''',
-        exp='''a<link href="//cdn2.hubspot.net/hub/103/asset/css/blog.css" rel="stylesheet" />b'''
-        ),
-    dict(
-        org='''a<img src="../files/asset/img/icon.png" />b''',
-        exp='''a<img src="//cdn2.hubspot.net/hub/103/asset/img/icon.png" />b'''
-        ),
-    dict(
-        org='''a<script src="../files/asset/img/icon.js" />b''',
-        exp='''a<script src="//cdn2.hubspot.net/hub/103/asset/img/icon.js" />b'''
-        ),
-    dict(
-        org='''a<img src='../files/asset/img/icon.png' />b''',
-        exp='''a<img src='//cdn2.hubspot.net/hub/103/asset/img/icon.png' />b'''
-        ),
-    dict(
-        org='''a<img src='http://flickr.com/files/asset/img/icon.png' />b''',
-        exp='''a<img src='http://flickr.com/files/asset/img/icon.png' />b'''
-        ),
-    dict(
-        org='''a<img src='//flickr.com/files/asset/img/icon.png' />b''',
-        exp='''a<img src='//flickr.com/files/asset/img/icon.png' />b'''
-        ),
-
-    
-]
-        
 
 class AsyncMain(Thread):
     def __init__(self, options):
@@ -151,12 +91,3 @@ class MockResult(object):
             return self.data
         else:
             return json.loads(self.content)
-        
-
-
-class TestFull(TestCase, MockeryMixin):
-    def test_main(self):
-        pass
-
-
-

@@ -569,29 +569,6 @@ Response body was:
         else:
             return None
 
-    _fix_src = re.compile(r'(<\w+[^>]+src=[\'"])(?P<link>[^\"\']+)([\'"])')        
-    _fix_link_href_re = re.compile(r'(<link[^>]+href=["\'])(?P<link>[^\"\']+)([\'"][^>]*>)')
-    _fix_url_re = re.compile(r'(:\s*url\([\'"]?)(?P<link>[^\)\'"]+)([\'"]?\);)')
-    def _convert_asset_urls(self, html, include_scheme=False):
-        def replacer(match):
-            link = match.group('link')
-            if link.startswith('//') or '://' in link:
-                return match.group(0)
-            if link.startswith('../files/'):
-                link = link[9:]
-            if link.startswith('./'):
-                link = link[2:]
-            if link.startswith('/'):
-                link = link[1:]
-            link = '//cdn2.hubspot.net/hub/%s/%s' % (self.options.hub_id, link)
-            if include_scheme:
-                link = 'https' + link
-            return match.expand('\g<1>%s\g<3>' % link)
-
-        html = self._fix_src.sub(replacer, html)  
-        html = self._fix_link_href_re.sub(replacer, html)
-        html = self._fix_url_re.sub(replacer, html)
-        return html
 
 def _get_key_query(options):
     if options.access_token:
@@ -710,7 +687,7 @@ If 'creatable' is true, then the template must have valid source content for tha
             if data['path'].count('/') == 1:
                 data['path'] = 'custom/' + data.get('category', 'page') + 's' + '/' + data['path']
                 
-        data['source'] = self._convert_asset_urls(self.file_details.content, include_scheme=data.get('category_id')==2)
+        data['source'] = self.file_details.content
 
         
 class StyleUploader(TemplateUploader):
@@ -834,7 +811,6 @@ class PageUploader(BaseUploader):
                 if is_markdown:
                     attr_html = markdown.markdown(attr_html, ['fenced_code', 'toc']) 
                     attr_html = attr_html.replace('&amp;lbrace;', '&#123;')
-                attr_html = self._convert_asset_urls(attr_html, data.get('category_id') == 2)
                 widget['body'][current_attribute_name] = attr_html
                 attribute_lines = None
                 current_attribute_name = None
