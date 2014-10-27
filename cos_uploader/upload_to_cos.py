@@ -719,16 +719,17 @@ class FileUploader(BaseUploader):
             r = requests.post(url, data=data, files=files, verify=False)
             logger.debug("RESULT %s " % r)
             if r.status_code < 300:
-                logger.info("Creation successful for file %s " % file_name)
-            return r.json()['objects'][0]['id']
+                logger.info("Creation successful for file %s.")
         else:
             url = self.get_put_url(object_id)
             logger.debug('POST URL IS %s' % url)
             r = requests.post(url, data=data, files=files, verify=False)
             if r.status_code < 300:
-                logger.info("Update successful for file %s " % file_name)
+                logger.info("Update successful for file %s.")
             logger.debug('RESULT %s' % r)
-            return object_id
+        obj = r.json()['objects'][0]
+        logger.info("You can link to file %s at %s" % (file_name, obj.get('alt_url', '??? CDN url not found. Check the file manager.')))
+        return obj['id']
             
 
 
