@@ -1,2 +1,7 @@
---extra-index-url http://d.pypi.python.org/simple/
+--allow-external snakecharmer
+--allow-unverified snakecharmer
+--allow-external mockery
+--allow-unverified mockery
+-e git+http://github.com/HubSpot/snakecharmer.git#egg=snakecharmer-1.0.1
+-e git+http://github.com/HubSpot/mockery.git#egg=mockery-1.0.0'
 -e .

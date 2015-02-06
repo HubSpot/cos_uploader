@@ -160,7 +160,7 @@ def _prompt_fetch_token(portal_id, config):
     raw_input("Permissions needed. Press any key to open the authorization screen in your web browser. ")
     url = content_app_base_url + "/content/%s/authorization/request?user_secret=%s" % (portal_id, secret)
     if not os.name == "nt":
-        os.system("open \"%s\"" % url)
+        os.system("xdg-open \"%s\"" % url)
     else:
         os.startfile(url)
     raw_input("Once you have granted permissions on the authorization screen, press any key to continue. ")
