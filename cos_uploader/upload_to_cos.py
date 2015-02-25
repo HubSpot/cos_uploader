@@ -575,9 +575,9 @@ Response body was:
 
 def _get_key_query(options):
     if options.access_token:
-        return 'access_token=%s' % options.access_token
+        return 'access_token=%s' % options.access_token.encode('utf8')
     else:
-        return 'hapikey=%s' % options.api_key
+        return 'hapikey=%s' % options.api_key('utf8')
 
 
     
