@@ -577,7 +577,7 @@ def _get_key_query(options):
     if options.access_token:
         return 'access_token=%s' % options.access_token.encode('utf8')
     else:
-        return 'hapikey=%s' % options.api_key('utf8')
+        return 'hapikey=%s' % options.api_key.encode('utf8')
 
 
     
