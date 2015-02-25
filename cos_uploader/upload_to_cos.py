@@ -7,6 +7,7 @@ import logging
 import markdown
 from pprint import pprint, pformat
 import os
+import platform
 from ordereddict import OrderedDict
 import re
 import requests
@@ -159,7 +160,9 @@ def _prompt_fetch_token(portal_id, config):
     secret = str(uuid4())
     raw_input("Permissions needed. Press any key to open the authorization screen in your web browser. ")
     url = content_app_base_url + "/content/%s/authorization/request?user_secret=%s" % (portal_id, secret)
-    if not os.name == "nt":
+    if platform.system == "Linux":
+        os.system("xdg-open \"%s\"" % url)
+    elif not os.name == "nt":
         os.system("open \"%s\"" % url)
     else:
         os.startfile(url)
