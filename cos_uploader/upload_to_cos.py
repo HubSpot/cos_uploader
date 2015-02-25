@@ -730,7 +730,7 @@ class FileUploader(BaseUploader):
             if r.status_code < 300:
                 logger.info("Update successful for file %s.")
             logger.debug('RESULT %s' % r)
-        obj = r.json()['objects'][0]
+        obj = r.json().get('objects', [{}])[0]
         logger.info("You can link to file %s at %s" % (file_name, obj.get('alt_url', '??? CDN url not found. Check the file manager.')))
         return obj['id']
             
