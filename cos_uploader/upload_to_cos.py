@@ -598,7 +598,7 @@ class TemplateUploader(BaseUploader):
         if not result.get('objects', []):
             return None
         else:
-            return result.get('objects')[0]['id']
+            return result.get('objects')[0].get('id')
 
     def check_valid(self, data):
         msg = ''
@@ -737,7 +737,7 @@ class FileUploader(BaseUploader):
             logger.debug('RESULT %s' % r)
         obj = r.json().get('objects', [{}])[0]
         logger.info("You can link to file %s at %s" % (file_name, obj.get('alt_url', '??? CDN url not found. Check the file manager.')))
-        return obj['id']
+        return obj.get('id')
             
 
 
@@ -749,7 +749,7 @@ class FileUploader(BaseUploader):
         if not result.get('objects', []):
             return None
         else:
-            return result.get('objects')[0]['id']
+            return result.get('objects')[0].get('id')
 
     def hydrate_json_data(self, data):
         pass
@@ -769,7 +769,7 @@ class PageUploader(BaseUploader):
         if not result.get('objects', []):
             return None
         else:
-            return result.get('objects')[0]['id']
+            return result.get('objects')[0].get('id')
     def hydrate_json_data(self, data):
         if 'slug' not in data:
             data['slug'] = os.path.splitext(self.file_details.relative_path)[0]
@@ -847,7 +847,7 @@ class SiteMapUploader(BaseUploader):
         if not result.get('objects', []):
             return None
         else:
-            return result.get('objects')[0]['id']
+            return result.get('objects')[0].get('id')
         
     def hydrate_json_data(self, data):
         # load all pages or slug__in?
