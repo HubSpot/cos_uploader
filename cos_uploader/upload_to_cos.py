@@ -498,6 +498,7 @@ class BaseUploader(Propertized):
     options = Prop()
     object_id = Prop()
     endpoint = ''
+    api_base = 'content'
 
     def upload(self):
         object_id = self.get_id_from_details()
@@ -556,13 +557,13 @@ Response body was:
 
 
     def get_create_url(self):
-        return 'https://api.hubapi.com/content/api/v2/%s?%s&portalId=%s' % (self.endpoint, _get_key_query(self.options), self.options.hub_id)
+        return 'https://api.hubapi.com/%s/api/v2/%s?%s&portalId=%s' % (self.api_base, self.endpoint, _get_key_query(self.options), self.options.hub_id)
 
     def get_put_url(self, object_id):
         buffer = '/buffer'
         if not self.options.use_buffer:
             buffer = ''
-        return 'https://api.hubapi.com/content/api/v2/%s/%s%s?%s&portalId=%s' % (self.endpoint, object_id, buffer, _get_key_query(self.options), self.options.hub_id)
+        return 'https://api.hubapi.com/%s/api/v2/%s/%s%s?%s&portalId=%s' % (self.api_base, self.endpoint, object_id, buffer, _get_key_query(self.options), self.options.hub_id)
 
     def get_id_from_details(self):
         if self.object_id:
@@ -701,6 +702,7 @@ class ScriptUploader(TemplateUploader):
 
 class FileUploader(BaseUploader):
     endpoint = 'files'
+    api_base = 'filemanager'
 
     def upload(self):
 
