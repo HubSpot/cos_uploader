@@ -38,6 +38,8 @@ except:
 
 from snakecharmer.propertized import Propertized, Prop
 from snakecharmer.script_options import ScriptOptions, Opt
+
+DEFAULT_HEADERS = {'user-agent': 'cos-uploader'}
  
 def main(options=None):
     options = options or Options.from_argv()
@@ -132,7 +134,7 @@ def _check_refresh_access_token(portal_id, config):
     if not config.get('access_token'):
         return False
     token = config.get('access_token')
-    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&access_token=%s' % (portal_id, token), verify=False)
+    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&access_token=%s' % (portal_id, token), verify=False, headers=DEFAULT_HEADERS)
     if r.status_code < 300:
         return True
     if not config.get('refresh_token'):
@@ -144,7 +146,8 @@ def _check_refresh_access_token(portal_id, config):
             'client_id': config.get('client_id', ''),
             'grant_type': 'refresh_token'
             },
-        verify=False
+        verify=False,
+        headers=DEFAULT_HEADERS
         )
     config['access_token'] = r.json()['access_token']
     return True
@@ -167,7 +170,7 @@ def _prompt_fetch_token(portal_id, config):
     else:
         os.startfile(url)
     raw_input("Once you have granted permissions on the authorization screen, press any key to continue. ")
-    result = requests.get(api_base_url + '/content/api/v2/cos-uploader/secret-to-token?user_secret=%s&portalId=%s' % (secret, portal_id), verify=False)
+    result = requests.get(api_base_url + '/content/api/v2/cos-uploader/secret-to-token?user_secret=%s&portalId=%s' % (secret, portal_id), verify=False, headers=DEFAULT_HEADERS)
     result_data = result.json()
     if not result_data.get('access_token'):
         fatal("There was a fatal error trying to retrieve the access token")
@@ -175,14 +178,14 @@ def _prompt_fetch_token(portal_id, config):
     config.update(result_data)
     
 def _check_api_access_valid(options):
-    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&%s' % (options.hub_id, _get_key_query(options)), verify=False)
+    r = requests.get(api_base_url + '/content/api/v2/landing-pages?limit=1&portalId=%s&%s' % (options.hub_id, _get_key_query(options)), verify=False, headers=DEFAULT_HEADERS)
     if r.status_code >= 300:
         fatal("The API Key or Access token you are using is not valid. If you are using a presaved token, you may need to delete your .cos-sync-config.yaml file.")
     return True
     
 def _get_startup_message():
     try:
-        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=327485')
+        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=327485', headers=DEFAULT_HEADERS)
         message = r.json().get('message', '')
         return message
     except:
@@ -508,14 +511,14 @@ class BaseUploader(Propertized):
         if not object_id:
             url = self.get_create_url()
             logger.debug('POST new data to %s' % url)
-            r = requests.post(url, data=json.dumps(data), verify=False)
+            r = requests.post(url, data=json.dumps(data), verify=False, headers=DEFAULT_HEADERS)
             self.object_id = r.json().get('id', None)
             if r.status_code < 300:
                 logger.info('Creation successful for file %s; the new file ID is %s' % (self.file_details.relative_path, self.object_id))
         else:
             url = self.get_put_url(object_id)
             logger.debug('PUT new data to %s' % url)
-            r = requests.put(url, data=json.dumps(data), verify=False)
+            r = requests.put(url, data=json.dumps(data), verify=False, headers=DEFAULT_HEADERS)
             self.object_id = object_id
             if r.status_code < 300:
                 logger.info('Update successful for file %s' % self.file_details.relative_path)
@@ -589,7 +592,7 @@ class TemplateUploader(BaseUploader):
         if not 'path' in data:
             return
         url = 'https://api.hubapi.com/content/api/v2/templates?path=%s&%s&portalId=%s' % (data['path'], _get_key_query(self.options), self.options.hub_id)
-        r = requests.get(url, verify=False)
+        r = requests.get(url, verify=False, headers=DEFAULT_HEADERS)
         result = r.json()
         if not result.get('objects', []):
             return None
@@ -719,14 +722,14 @@ class FileUploader(BaseUploader):
         if not object_id:
             url = self.get_create_url()
             logger.debug('POST URL IS %s' % url)
-            r = requests.post(url, data=data, files=files, verify=False)
+            r = requests.post(url, data=data, files=files, verify=False, headers=DEFAULT_HEADERS)
             logger.debug("RESULT %s " % r)
             if r.status_code < 300:
                 logger.info("Creation successful for file %s.")
         else:
             url = self.get_put_url(object_id)
             logger.debug('POST URL IS %s' % url)
-            r = requests.post(url, data=data, files=files, verify=False)
+            r = requests.post(url, data=data, files=files, verify=False, headers=DEFAULT_HEADERS)
             if r.status_code < 300:
                 logger.info("Update successful for file %s.")
             logger.debug('RESULT %s' % r)
@@ -739,7 +742,7 @@ class FileUploader(BaseUploader):
     def lookup_id(self, data):
         alt_key = 'hub/%s/%s' % (self.options.hub_id, os.path.splitext(self.file_details.relative_path)[0])
         url = 'https://api.hubapi.com/content/api/v2/files?alt_key=%s&%s&portalId=%s' % (alt_key, _get_key_query(self.options), self.options.hub_id)
-        r = requests.get(url, verify=False)
+        r = requests.get(url, verify=False, headers=DEFAULT_HEADERS)
         result = r.json()
         if not result.get('objects', []):
             return None
@@ -759,7 +762,7 @@ class PageUploader(BaseUploader):
 
     def lookup_id(self, data):
         url = 'https://api.hubapi.com/content/api/v2/pages?slug=%s&%s&portalId=%s' % (data['slug'], _get_key_query(self.options), self.options.hub_id)
-        r = requests.get(url, verify=False)
+        r = requests.get(url, verify=False, headers=DEFAULT_HEADERS)
         result = r.json()
         if not result.get('objects', []):
             return None
@@ -836,7 +839,7 @@ class SiteMapUploader(BaseUploader):
         name = os.path.splitext(self.file_details.relative_path)[0]
         url = 'https://api.hubapi.com/content/api/v2/site-maps?name=%s&%s&portalId=%s' % (name, _get_key_query(self.options), self.options.hub_id)
         r = requests.get(
-            url, verify=False
+            url, verify=False, headers=DEFAULT_HEADERS
             )
         result = r.json()
         if not result.get('objects', []):
@@ -868,7 +871,7 @@ class SiteMapUploader(BaseUploader):
         build_dicts(tree)
         slugs_in = '&'.join(['slug__in=%s' % slug for slug in all_slugs])
         url = 'https://api.hubapi.com/content/api/v2/pages?%s&%s&portalId=%s&limit=500' % (slugs_in, _get_key_query(self.options), self.options.hub_id)
-        r = requests.get(url, verify=False)
+        r = requests.get(url, verify=False, headers=DEFAULT_HEADERS)
         for page in r.json().get('objects', []):
             slug_to_node[page['slug']]['page_id'] = page['id']
 
