@@ -708,7 +708,6 @@ class FileUploader(BaseUploader):
     api_base = 'filemanager'
 
     def upload(self):
-
         files = {'files': open(self.file_details.full_local_path, 'rb')}
         folder, file_name = os.path.split(self.file_details.relative_path)
         data = {
@@ -727,14 +726,15 @@ class FileUploader(BaseUploader):
             r = requests.post(url, data=data, files=files, verify=False, headers=DEFAULT_HEADERS)
             logger.debug("RESULT %s " % r)
             if r.status_code < 300:
-                logger.info("Creation successful for file %s.")
+                logger.info("Creation successful for file %s." % self.file_details.relative_path)
         else:
             url = self.get_put_url(object_id)
             logger.debug('POST URL IS %s' % url)
             r = requests.post(url, data=data, files=files, verify=False, headers=DEFAULT_HEADERS)
             if r.status_code < 300:
-                logger.info("Update successful for file %s.")
+                logger.info("Update successful for file %s." % self.file_details.relative_path)
             logger.debug('RESULT %s' % r)
+
         obj = r.json().get('objects', [{}])[0]
         logger.info("You can link to file %s at %s" % (file_name, obj.get('alt_url', '??? CDN url not found. Check the file manager.')))
         return obj.get('id')
