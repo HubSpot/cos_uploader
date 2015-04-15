@@ -742,14 +742,18 @@ class FileUploader(BaseUploader):
 
 
     def lookup_id(self, data):
-        alt_key = 'hub/%s/%s' % (self.options.hub_id, os.path.splitext(self.file_details.relative_path)[0])
-        url = 'https://api.hubapi.com/content/api/v2/files?alt_key=%s&%s&portalId=%s' % (alt_key, _get_key_query(self.options), self.options.hub_id)
-        r = requests.get(url, verify=False, headers=DEFAULT_HEADERS)
-        result = r.json()
-        if not result.get('objects', []):
-            return None
-        else:
-            return result.get('objects')[0].get('id')
+        cloud_key = 'hub/%s/%s' % (self.options.hub_id, self.file_details.relative_path)
+        cloud_key2 = 'hubfs/%s/%s' % (self.options.hub_id, self.file_details.relative_path)
+        for key in (cloud_key, cloud_key2):
+            url = 'https://api.hubapi.com/content/api/v2/files?cloud_key=%s&%s&portalId=%s' % (key, _get_key_query(self.options), self.options.hub_id)
+            r = requests.get(url, verify=False, headers=DEFAULT_HEADERS)
+            result = r.json()
+            if not result.get('objects', []):
+                return_val = None
+            else:
+                return_val = result.get('objects')[0].get('id')
+            if return_val is not None:
+                return return_val
 
     def hydrate_json_data(self, data):
         pass
