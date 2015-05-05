@@ -5,29 +5,27 @@ from copy import deepcopy
 import json
 import logging
 import markdown
-from pprint import pprint, pformat
+from pprint import pformat
 import os
 import platform
 from ordereddict import OrderedDict
 import re
 import requests
-import time
-import traceback
 import yaml
 import sys
 import time
 import traceback
 from uuid import uuid4
 from error_reporting import report_exception
-
-
+logging.captureWarnings(True)
+logging.getLogger('py.warnings').setLevel(logging.ERROR)
 
 if sys.argv[0].endswith('.py'):
     logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 else:
     logging.basicConfig(format='%(message)s', level=logging.INFO)
 logger = logging.getLogger("_")
-logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.ERROR)
 
 try:
     from watchdog.observers import Observer
@@ -61,9 +59,7 @@ def do_main(options):
         print message
         print "-------------------------"
         raw_input("Press ctrl-c to quit, or press any key to continue ...")
-    is_interactive_mode = False
     if not options.hub_id or (not options.api_key and not options.access_token):
-        is_interactive_mode = True
         handle_interactive_mode(options)
     options.target_folder = options.target_folder.replace('\\', '/')
     if not os.path.isdir(options.target_folder):
