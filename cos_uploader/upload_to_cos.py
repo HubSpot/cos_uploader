@@ -58,7 +58,6 @@ def do_main(options):
         print "-------------------------"
         print message
         print "-------------------------"
-        raw_input("Press ctrl-c to quit, or press any key to continue ...")
     if not options.hub_id or (not options.api_key and not options.access_token):
         handle_interactive_mode(options)
     options.target_folder = options.target_folder.replace('\\', '/')
