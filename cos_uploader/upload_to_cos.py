@@ -180,7 +180,7 @@ def _check_api_access_valid(options):
     
 def _get_startup_message():
     try:
-        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=327485', headers=DEFAULT_HEADERS)
+        r = requests.get(api_base_url + '/content/api/v2/cos-uploader/startup-message?portalId=327485', verify=False, headers=DEFAULT_HEADERS)
         message = r.json().get('message', '')
         return message
     except:
