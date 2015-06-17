@@ -647,7 +647,7 @@ If 'creatable' is true, then the template must have valid source content for tha
         elif category == 'blog_listing':
             data['category_id'] = 3
             data['template_type'] = 7
-        elif category in ('page', 'landing_page', 'asset'):
+        elif category in ('page', 'landing_page', 'asset', 'include'):
             data['category_id'] = 1
             data['template_type'] = 4
         elif category == 'error_page':
