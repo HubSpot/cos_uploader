@@ -1,3 +1,7 @@
+PLEASE NOTE that HubSpot now supports uploading and downloading files via FTP ([http://designers.hubspot.com/docs/tools/hubspot-ftp](http://designers.hubspot.com/docs/tools/hubspot-ftp)). HubSpot will stop supporting the COS Uploader on Jan. 1st 2016.
+
+<hr/>
+
 The cos_uploader will watch the contents of a folder on your local hard drive and upload the templates and static files to the HubSpot COS every time a file child is changed.
 
 Instructions on how to install and use the cos_uploader are here (for use with the pre-compiled binary):  
